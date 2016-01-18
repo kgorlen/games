@@ -4,32 +4,43 @@
 package kgorlen.games.potion;
 
 import kgorlen.games.Move;
-import kgorlen.games.MoveGenerator;
 import kgorlen.games.Position;
 import kgorlen.games.Variation;
-import kgorlen.games.potion.Ingredient;
+import kgorlen.games.potion.PotionVariation;
+import kgorlen.games.potion.PotionGenerator;
 
 /**
  * @author Keith gorlen@comcast.net
  *
  */
 public class PotionStock implements Position {
-	Ingredient[] ingredient = {
-			new Ingredient("potion"),
-			new Ingredient("eon"),
-			new Ingredient("tof"),
-			new Ingredient("wob"),
-			new Ingredient("af"),
-			new Ingredient("tow")
-	};
-	int numReactions = 0;
+	private int[] amount = new int[Ingredient.values().length];
+	private int numReactions = 0;
 
 	@Override
-	public Position copy() {
-		// TODO Auto-generated method stub
-		return null;
+	public PotionStock copy() {
+		PotionStock p = new PotionStock();
+		p.numReactions = numReactions;
+		for (int i = 0; i < amount.length; i++) {
+			p.amount[i] = amount[i];
+		}
+		return p;
 	}
 
+	public int getAmount(Ingredient i) {
+		return amount[i.ordinal()];
+	}
+	
+	public int setAmount(Ingredient i, int amount) {
+		if (amount < 0) throw new RuntimeException("Ingredient amount <0");
+		
+		return this.amount[i.ordinal()] = amount;
+	}
+	
+	public int addAmount(Ingredient i, int amount) {
+		return this.amount[i.ordinal()] += amount;
+	}
+	
 	/* (non-Javadoc)
 	 * @see kgorlen.games.Position#numMoves()
 	 */
@@ -43,8 +54,9 @@ public class PotionStock implements Position {
 	 */
 	@Override
 	public boolean isValidMove(Move m) {
-		// TODO Auto-generated method stub
-		return false;
+		if (m == null) return false;
+
+		return true;
 	}
 
 	/* (non-Javadoc)
@@ -52,8 +64,8 @@ public class PotionStock implements Position {
 	 */
 	@Override
 	public void makeMove(Move m) {
-		// TODO Auto-generated method stub
-
+		((Reaction) m).brew(this);
+		numReactions++;
 	}
 
 	/* (non-Javadoc)
@@ -61,25 +73,24 @@ public class PotionStock implements Position {
 	 */
 	@Override
 	public int evaluate() {
-		return ingredient[0].amount;
+		return 1000*amount[Ingredient.POTION.ordinal()] 
+				- numReactions;	// penalize if more reactions
 	}
 
 	/* (non-Javadoc)
 	 * @see kgorlen.games.Position#moveGenerator(boolean)
 	 */
 	@Override
-	public MoveGenerator moveGenerator(boolean debug) {
-		// TODO Auto-generated method stub
-		return null;
+	public PotionGenerator moveGenerator(boolean debug) {
+		return new PotionGenerator(this, debug);
 	}
 
 	/* (non-Javadoc)
 	 * @see kgorlen.games.Position#moveGenerator()
 	 */
 	@Override
-	public MoveGenerator moveGenerator() {
-		// TODO Auto-generated method stub
-		return null;
+	public PotionGenerator moveGenerator() {
+		return new PotionGenerator(this, false);
 	}
 
 	/* (non-Javadoc)
@@ -87,8 +98,7 @@ public class PotionStock implements Position {
 	 */
 	@Override
 	public Variation variation() {
-		// TODO Auto-generated method stub
-		return null;
+		return new PotionVariation();
 	}
 
 	/* (non-Javadoc)
@@ -96,9 +106,8 @@ public class PotionStock implements Position {
 	 */
 	@Override
 	public void print(String indent) {
-		int i;
-		for (i=0; i < ingredient.length; i++) {
-			System.out.format("%s%s = %d%n", indent, ingredient[i].name, ingredient[i].amount);
+		for (Ingredient i: Ingredient.values()) {
+			System.out.format("%s%s = %d%n", indent, i, amount[i.ordinal()]);
 		}
 	}
 
