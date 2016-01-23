@@ -1,6 +1,5 @@
 package kgorlen.games;
 
-import kgorlen.games.GamePosition;
 import kgorlen.games.Move;
 
 /**
@@ -18,7 +17,7 @@ public interface Variation {
 	/**
 	 * @return score of this Variation
 	 */
-	public int score();
+	public int getScore();
 
 	/**
 	 * @param i index of Move to get 0 - numMoves()-1
@@ -27,17 +26,28 @@ public interface Variation {
 	public Move getMove(int i);
 	
 	/**
+	 * @param v	Variation from the current GamePosition
+	 * @return	score of Variation
+	 */
+	public int setMoves(Variation v);
+	
+	/**
 	 * @return	first Move in this Variation
 	 */
 	public Move getMove();
 
 	/**
+	 * @param vscore	score of this Variation
+	 * @param firstMove	Move to add to the specified Variation
+	 */
+	public void addMove(int vscore, Move firstMove);
+	
+	/**
+	 * @param vscore	score of this Variation
 	 * @param firstMove	Move to add to the specified Variation
 	 * @param v			Variation from the current GamePosition
-	 * @param vscore	score of this Variation
-	 * @return			number of moves in updated Variation
 	 */
-	public int addMoves(Move firstMove, Variation v, int vscore);
+	public void addMoves(int vscore, Move firstMove, Variation v);
 
 	/**
 	 * Removes all Moves from this Variation
@@ -51,13 +61,13 @@ public interface Variation {
 	 * @param indent	String to prepend to printed lines (to
 	 * 					indicate current search depth)
 	 */
-	public void print(GamePosition start, String indent);
+	public void print(Position start, String indent);
 
 	/**
 	 * Print Variation without indentation
 	 * 
 	 * @param start		starting GamePosition of this Variation
 	 */
-	public void print(GamePosition start);
+	public void print(Position start);
 
 }

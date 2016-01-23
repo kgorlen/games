@@ -17,9 +17,12 @@ public class PotionStock implements Position {
 	private int[] amount = new int[Ingredient.values().length];
 	private int numReactions = 0;
 
+	/* (non-Javadoc)
+	 * @see kgorlen.games.Position#copy()
+	 */
 	@Override
 	public PotionStock copy() {
-		PotionStock p = new PotionStock();
+		PotionStock p = new PotionStock();	// must make a deep copy
 		p.numReactions = numReactions;
 		for (int i = 0; i < amount.length; i++) {
 			p.amount[i] = amount[i];
@@ -55,7 +58,6 @@ public class PotionStock implements Position {
 	@Override
 	public boolean isValidMove(Move m) {
 		if (m == null) return false;
-
 		return true;
 	}
 
@@ -117,6 +119,33 @@ public class PotionStock implements Position {
 	@Override
 	public void print() {
 		print("");
+	}
+
+	/* (non-Javadoc)
+	 * @see java.lang.Object#hashCode()
+	 */
+	@Override
+	public int hashCode() {
+		int hashcode = 0;
+		for (Ingredient i: Ingredient.values()) {
+			hashcode = hashcode*13 ^ amount[i.ordinal()];
+		}
+		return hashcode;
+	}
+
+	/* (non-Javadoc)
+	 * @see java.lang.Object#equals(java.lang.Object)
+	 */
+	@Override
+	public boolean equals(Object o) {
+		if (o == null) return false;
+		if (o == this) return true;
+		if (!(o instanceof PotionStock)) return false;
+		for (Ingredient i: Ingredient.values()) {
+			if (amount[i.ordinal()] != ((PotionStock) o).amount[i.ordinal()])
+				return false;
+		}
+		return true;
 	}
 
 }

@@ -35,7 +35,7 @@ public class NegaMaxAlphaBeta extends AlphaBetaTreeSearch {
 		int color = parent.scoreSign();
 		
 		if (debug) {
-			System.out.format("%s{ negaMaxAlphaBetaSearch(%s) alpha=%d, beta=%d, color=%d, position:%n",
+			System.out.format("%s{ negaMaxAlphaBeta.search(%s) alpha=%d, beta=%d, color=%d, position:%n",
 					indent, parent.sideToMove(), alpha, beta, color);
 			parent.print(indent);
 		}
@@ -43,7 +43,7 @@ public class NegaMaxAlphaBeta extends AlphaBetaTreeSearch {
 		if (parent.isWin()) {
 			score = color * parent.scoreWin();
 			pvar.reset();
-			if (debug) System.out.format("%s} negaMaxAlphaBetaSearch(%s) returning win score=%d%n",
+			if (debug) System.out.format("%s} negaMaxAlphaBeta.search(%s) returning win score=%d%n",
 					indent, parent.sideToMove(), score);
 			return score;
 		}
@@ -51,7 +51,7 @@ public class NegaMaxAlphaBeta extends AlphaBetaTreeSearch {
 		if (parent.isDraw()) {
 			score = color * parent.scoreDraw();
 			pvar.reset();
-			if (debug) System.out.format("%s} negaMaxAlphaBetaSearch(%s) returning draw score=%d%n",
+			if (debug) System.out.format("%s} negaMaxAlphaBeta.search(%s) returning draw score=%d%n",
 					indent, parent.sideToMove(), score);
 			return score;
 		}
@@ -59,7 +59,7 @@ public class NegaMaxAlphaBeta extends AlphaBetaTreeSearch {
 		if (depth == 0) {
 			score = color * parent.evaluate();
 			pvar.reset();
-			if (debug) System.out.format("%s} negaMaxAlphaBetaSearch(%s) returning evaluation score=%d%n",
+			if (debug) System.out.format("%s} negaMaxAlphaBeta.search(%s) returning evaluation score=%d%n",
 					indent, parent.sideToMove(), score);
 			return score;
 		}
@@ -78,14 +78,14 @@ public class NegaMaxAlphaBeta extends AlphaBetaTreeSearch {
 			}
 			if (score > alpha) {
 				alpha = score;
-				pvar.addMoves(move, var, score);
+				pvar.addMoves(score, move, var);
 				if (debug) {
 					pvar.print(parent, indent);
 				}
 			}
 		}
 		
-		if (debug) System.out.format("%s} negaMaxAlphaBetaSearch(%s) returning search score=%d%n",
+		if (debug) System.out.format("%s} negaMaxAlphaBeta.search(%s) returning search score=%d%n",
 				indent, parent.sideToMove(), alpha);
 		return alpha;
 	}

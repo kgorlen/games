@@ -11,12 +11,43 @@
 
 	Assuming you can control the order of reactions, write a program that can calculate the maximum number of 
 	health potions one can brew with a given amount of ingredients. Here is example output: If I have 34 eon, 
-	59 tof, 20 wob, 5 af, and 20 tow, I can make seven health potions
+	59 tof, 20 wob, 5 af, and 20 tow, I can make seven health potions:
+	
+		Enter amount of EON:34
+		Enter amount of TOF:59
+		Enter amount of WOB:20
+		Enter amount of AF:5
+		Enter amount of TOW:20
+		Brewed 7 units of potion with the reactions:
+		-4TOF -7TOW -2AF +1POTION 
+		-4TOF -7TOW -2AF +1POTION 
+		-4EON -2WOB +3AF +4TOW 
+		-4TOF -7TOW -2AF +1POTION 
+		-4EON -2WOB +3AF +4TOW 
+		-4TOF -7TOW -2AF +1POTION 
+		-4EON -2WOB +3AF +4TOW 
+		-4EON -2WOB +3AF +4TOW 
+		-4TOF -7TOW -2AF +1POTION 
+		-4EON -2WOB +3AF +4TOW 
+		-4EON -2WOB +3AF +4TOW 
+		-4TOF -7TOW -2AF +1POTION 
+		-4EON -2WOB +3AF +4TOW 
+		-4EON -2WOB +3AF +4TOW 
+		-4TOF -7TOW -2AF +1POTION 
+		score=6985
+		Stock remaining:
+		POTION = 7
+		EON = 2
+		TOF = 31
+		WOB = 4
+		AF = 15
+		TOW = 3
+		9229 positions searched, 2894 TT entries, 6237 TT hits, Infinity positions/us
 
  */
 package kgorlen.games.potion;
 
-import java.util.Iterator;
+import java.util.ListIterator;
 import java.util.Scanner;
 import kgorlen.games.DepthFirst;
 
@@ -45,8 +76,8 @@ public class Potion {
 			PotionVariation pvar = new PotionVariation();
 			DepthFirst searchResults = new DepthFirst(pvar, Debug);
 			searchResults.search(root, maxDepth, pvar, "");
-			Iterator<Reaction> i = pvar.iterator();
-			while (i.hasNext()) root.makeMove(i.next());
+			ListIterator<Reaction> i = pvar.listIterator(pvar.size());
+			while (i.hasPrevious()) root.makeMove(i.previous());
 			System.out.format("Brewed %d units of potion with the reactions:%n",
 					root.getAmount(Ingredient.POTION));
 			pvar.print(root);

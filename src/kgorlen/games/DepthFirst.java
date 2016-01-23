@@ -22,6 +22,15 @@ public class DepthFirst extends TreeSearch {
 			parent.print(indent);
 		}
 
+		Variation var = transposition.get(parent);
+		if (var != null) {
+			score = pvar.setMoves(var);
+			ttHits++;
+			if (debug) System.out.format("%s} DepthFirst(%d) returning transposition score=%d%n",
+					indent, depth, score);
+			return score;
+		}
+		
 		MoveGenerator gen = parent.moveGenerator(debug);		
 		int bestValue = parent.evaluate();
 		if (depth == 0 || !gen.hasNext()) {
@@ -36,11 +45,13 @@ public class DepthFirst extends TreeSearch {
 			positionsSearched++;
 			Position child = parent.copy();
 			child.makeMove(move);
-			Variation var = parent.variation();
+			var = parent.variation();
 			score = search(child, depth-1, var, indent + "    ");
+			var.addMove(score, move);
+			transposition.put(parent, var);
 			if (score > bestValue) {
 				bestValue = score;
-				pvar.addMoves(move, var, score);
+				pvar.setMoves(var);
 				if (debug) {
 					System.out.format("%sReaction %s score = %d%n", indent, move.toString(), score);
 					pvar.print(parent, indent);

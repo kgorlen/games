@@ -29,7 +29,7 @@ public class MiniMax extends TreeSearch {
 		int score;				// score for *parent* GamePosition
 		
 		if (debug) {
-			System.out.format("%s{ miniMaxSearch(%s) maximize=%b, position:%n",
+			System.out.format("%s{ MiniMax.search(%s) maximize=%b, position:%n",
 					indent, parent.sideToMove(), maximize);
 			parent.print(indent);
 		}
@@ -37,7 +37,7 @@ public class MiniMax extends TreeSearch {
 		if (parent.isWin()) {
 			score = parent.scoreWin();
 			pvar.reset();
-			if (debug) System.out.format("%s} miniMaxSearch(%s) returning win score=%d%n",
+			if (debug) System.out.format("%s} MiniMax.search(%s) returning win score=%d%n",
 					indent, parent.sideToMove(), score);
 			return score;
 		}
@@ -45,7 +45,7 @@ public class MiniMax extends TreeSearch {
 		if (parent.isDraw()) {
 			score = parent.scoreDraw();
 			pvar.reset();
-			if (debug) System.out.format("%s} miniMaxSearch(%s) returning draw score=%d%n",
+			if (debug) System.out.format("%s} MiniMax.search(%s) returning draw score=%d%n",
 					indent, parent.sideToMove(), score);
 			return score;
 		}
@@ -53,7 +53,7 @@ public class MiniMax extends TreeSearch {
 		if (depth == 0) {
 			score = parent.evaluate();
 			pvar.reset();
-			if (debug) System.out.format("%s} miniMaxSearch(%s) returning evaluation score=%d%n",
+			if (debug) System.out.format("%s} MiniMax.search(%s) returning evaluation score=%d%n",
 					indent, parent.sideToMove(), score);
 			return score;
 		}
@@ -72,7 +72,7 @@ public class MiniMax extends TreeSearch {
 				score = search(child, depth-1, false, var, indent + "    ");
 				if (score > bestValue) {
 					bestValue = score;
-					pvar.addMoves(move, var, score);
+					pvar.addMoves(score, move, var);
 					if (debug) {
 						pvar.print(parent, indent);
 					}
@@ -89,7 +89,7 @@ public class MiniMax extends TreeSearch {
 				score = search(child, depth-1, true, var, indent + "    ");
 				if (score < bestValue) {
 					bestValue = score;
-					pvar.addMoves(move, var, score);
+					pvar.addMoves(score, move, var);
 					if (debug) {
 						pvar.print(parent, indent);
 					}
@@ -97,7 +97,7 @@ public class MiniMax extends TreeSearch {
 			}
 		}
 		
-		if (debug) System.out.format("%s} miniMaxSearch(%s) returning search score=%d%n",
+		if (debug) System.out.format("%s} MiniMax.search(%s) returning search score=%d%n",
 				indent, parent.sideToMove(), bestValue);
 		return bestValue;
 	}

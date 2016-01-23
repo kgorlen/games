@@ -272,4 +272,14 @@ public class TicTacToePosition implements GamePosition {
 		print("");
 		return;
 	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (o == null) return false;
+		if (o == this) return true;
+		if (!(o instanceof TicTacToePosition)) return false;
+		if (board[0] == ((TicTacToePosition) o).board[0]
+				&& board[1] == ((TicTacToePosition) o).board[1]) return true;
+		return false;
+	}
 }

@@ -30,7 +30,7 @@ public class NegaMax extends TreeSearch {
 		int color = parent.scoreSign();
 		
 		if (debug) {
-			System.out.format("%s{ negaMaxSearch(%s) color=%d, position:%n",
+			System.out.format("%s{ negaMax.search(%s) color=%d, position:%n",
 					indent, parent.sideToMove(), color);
 			parent.print(indent);
 		}
@@ -38,7 +38,7 @@ public class NegaMax extends TreeSearch {
 		if (parent.isWin()) {
 			score = color * parent.scoreWin();
 			pvar.reset();
-			if (debug) System.out.format("%s} negaMaxSearch(%s) returning win score=%d%n",
+			if (debug) System.out.format("%s} negaMax.search(%s) returning win score=%d%n",
 					indent, parent.sideToMove(), score);
 			return score;
 		}
@@ -46,7 +46,7 @@ public class NegaMax extends TreeSearch {
 		if (parent.isDraw()) {
 			score = color * parent.scoreDraw();
 			pvar.reset();
-			if (debug) System.out.format("%s} negaMaxSearch(%s) returning draw score=%d%n",
+			if (debug) System.out.format("%s} negaMax.search(%s) returning draw score=%d%n",
 					indent, parent.sideToMove(), score);
 			return score;
 		}
@@ -54,7 +54,7 @@ public class NegaMax extends TreeSearch {
 		if (depth == 0) {
 			score = color * parent.evaluate();
 			pvar.reset();
-			if (debug) System.out.format("%s} negaMaxSearch(%s) returning evaluation score=%d%n",
+			if (debug) System.out.format("%s} negaMax.search(%s) returning evaluation score=%d%n",
 					indent, parent.sideToMove(), score);
 			return score;
 		}
@@ -70,14 +70,14 @@ public class NegaMax extends TreeSearch {
 			score = -search(child, depth-1, var, indent + "    ");
 			if (score > bestValue) {
 				bestValue = score;
-				pvar.addMoves(move, var, score);
+				pvar.addMoves(score, move, var);
 				if (debug) {
 					pvar.print(parent, indent);
 				}
 			}
 		}
 		
-		if (debug) System.out.format("%s} negaMaxSearch(%s) returning search score=%d%n",
+		if (debug) System.out.format("%s} negaMax.search(%s) returning search score=%d%n",
 				indent, parent.sideToMove(), bestValue);
 		return bestValue;
 	}

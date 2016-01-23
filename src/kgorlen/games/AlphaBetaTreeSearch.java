@@ -6,23 +6,32 @@ package kgorlen.games;
  * Extend TreeSearch with support for alpha-beta cutoffs
  */
 public abstract class AlphaBetaTreeSearch extends TreeSearch {
-	long alphaCutoffs;
-	long betaCutoffs;	
+	private long alphaCutoffs;
+	private long betaCutoffs;	
 	
-	long incCutoffs(boolean maximize) {
+	protected long incCutoffs(boolean maximize) {
 		return maximize ? ++betaCutoffs : ++alphaCutoffs;
 	}
 	
-	long incCutoffs(int color) {
+	protected long incCutoffs(int color) {
 		return (color > 0) ? ++betaCutoffs : ++alphaCutoffs;
+	}
+	
+	/**
+	 * Reset the positions searched counter
+	 */
+	public void reset() {
+		super.reset();
+		alphaCutoffs = 0;
+		betaCutoffs = 0;
 	}
 	
 	/**
 	 * Print search statistics
 	 */
 	public void printStatistics() {
-		System.out.printf("%d positions searched, %d alpha cutoffs, %d beta cutoffs, %.0f positions/ms\n",
+		System.out.printf("%d positions searched, %d alpha cutoffs, %d beta cutoffs, %.2f positions/us\n",
 							positionsSearched, alphaCutoffs, betaCutoffs,
-							((float) positionsSearched)/elapsedTime);
+							((float) 1000 * positionsSearched)/elapsedTime);
 	}
 }

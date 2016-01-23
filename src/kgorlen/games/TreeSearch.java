@@ -1,5 +1,7 @@
 package kgorlen.games;
 
+import java.util.HashMap;
+
 import kgorlen.games.Variation;
 
 /**
@@ -12,8 +14,10 @@ public abstract class TreeSearch {
 	protected boolean debug = false;
 	protected long positionsSearched = 0;
 	protected Variation principalVariation = null;
+	protected HashMap<Position, Variation> transposition = new HashMap<Position, Variation>();
+	protected long ttHits = 0;
 	protected long elapsedTime = 0;
-	long startTime = System.currentTimeMillis();
+	private long startTime = System.nanoTime();
 	
 	/**
 	 * @return the debug switch setting
@@ -34,6 +38,8 @@ public abstract class TreeSearch {
 	 */
 	public void reset() {
 		positionsSearched = 0;
+		principalVariation = null;
+		transposition.clear();
 	}
 	
 	/**
@@ -41,7 +47,7 @@ public abstract class TreeSearch {
 	 * 			instance created.
 	 */
 	public long elapsedTime() {
-		long currentTime = System.currentTimeMillis();
+		long currentTime = System.nanoTime();
 		elapsedTime = currentTime - startTime;
 		startTime = currentTime;
 		return elapsedTime;
@@ -58,7 +64,7 @@ public abstract class TreeSearch {
 	 * @return	best score found by search
 	 */
 	public int getScore() {
-		return principalVariation.score();
+		return principalVariation.getScore();
 	}
 	
 	/**
@@ -72,7 +78,8 @@ public abstract class TreeSearch {
 	 * Print search statistics
 	 */
 	public void printStatistics() {
-		System.out.printf("%d positions searched, %.0f positions/ms\n",
-							positionsSearched, ((float) positionsSearched)/elapsedTime);
+		System.out.printf("%d positions searched, %d TT entries, %d TT hits, %.2f positions/us\n",
+							positionsSearched, transposition.size(), ttHits,
+							((float) 1000*positionsSearched)/elapsedTime);
 	}
 }

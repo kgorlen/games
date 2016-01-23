@@ -1,7 +1,7 @@
 package kgorlen.games.tictactoe;
 
 import kgorlen.games.Variation;
-import kgorlen.games.GamePosition;
+import kgorlen.games.Position;
 import kgorlen.games.Move;
 
 /**
@@ -34,7 +34,7 @@ class TicTacToeVariation implements Variation {
 	/* (non-Javadoc)
 	 * @see kgorlen.games.Variation#score()
 	 */
-	public int score() {
+	public int getScore() {
 		return score;
 	}
 
@@ -52,17 +52,37 @@ class TicTacToeVariation implements Variation {
 		return getMove(0);
 	}
 	
+	@Override
+	public int setMoves(Variation v) {
+		for (int i=0; i<v.numMoves(); i++) {
+			move[i+1] = ((TicTacToeVariation) v).move[i];
+		}
+		nmoves = ((TicTacToeVariation) v).nmoves;
+		return score = ((TicTacToeVariation) v).score;
+	}
+
+	@Override
+	public void addMove(int vscore, Move firstMove) {
+		score = vscore;
+		for (int i=0; i<nmoves; i++) {
+			move[i+1] = move[i];
+		}
+		move[0] = ((TicTacToeMove)firstMove).move;
+		nmoves++;
+		return;
+	}
+
 	/* (non-Javadoc)
 	 * @see kgorlen.games.Variation#addMoves(kgorlen.games.Move, kgorlen.games.Variation, int)
 	 */
-	public int addMoves(Move firstMove, Variation v, int vscore) {
+	public void addMoves(int vscore, Move firstMove, Variation v) {
 		score = vscore;
 		move[0] = ((TicTacToeMove)firstMove).move;
-		int i;
-		for (i=0; i<v.numMoves(); i++) {
+		for (int i=0; i<v.numMoves(); i++) {
 			move[i+1] = ((TicTacToeVariation)v).move[i];
 		}
-		return (nmoves = ((TicTacToeVariation)v).nmoves+1);
+		nmoves = ((TicTacToeVariation)v).nmoves+1;
+		return;
 	}
 
 	/* (non-Javadoc)
@@ -76,7 +96,7 @@ class TicTacToeVariation implements Variation {
 	/* (non-Javadoc)
 	 * @see kgorlen.games.Variation#print(kgorlen.games.GamePosition, java.lang.String)
 	 */
-	public void print(GamePosition start, String indent) {
+	public void print(Position start, String indent) {
 		System.out.print(indent);
 		System.out.println("Variation score: " + Integer.toString(score)
 								+ " move #" + Integer.toString(start.numMoves()));
@@ -98,8 +118,9 @@ class TicTacToeVariation implements Variation {
 	/* (non-Javadoc)
 	 * @see kgorlen.games.Variation#print(kgorlen.games.GamePosition)
 	 */
-	public void print(GamePosition start) {
+	public void print(Position start) {
 		print(start, "");
 		return;
 	}
+
  }

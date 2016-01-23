@@ -32,6 +32,18 @@ public class TicTacToeMoveGenerator implements MoveGenerator {
 	 * better moves first, which narrows the search by increasing
 	 * the chances of alpha/beta cutoffs.
 	 * 
+	 * Corners, Center, Sides:
+	 * 	232427 positions searched, 32000 alpha cutoffs, 36552 beta cutoffs, 2.87 positions/us
+	 * 
+	 * Center, Corners, Sides:
+	 * 	210911 positions searched, 24755 alpha cutoffs, 42894 beta cutoffs, 2.49 positions/us
+	 * 
+	 * Threats, Corners, Center, Sides:
+	 * 	186533 positions searched, 25736 alpha cutoffs, 30552 beta cutoffs, 2.16 positions/us
+	 * 
+	 * Threats, Center, Corners, Sides:
+	 * 	172258 positions searched, 20550 alpha cutoffs, 36548 beta cutoffs, 2.32 positions/us
+	 * 
 	 * @param p	starting/current GamePosition
 	 */
 	public TicTacToeMoveGenerator(TicTacToePosition p, boolean debug) {
@@ -117,13 +129,13 @@ public class TicTacToeMoveGenerator implements MoveGenerator {
 					}
 					break;
 				}
-			case CORNERS:				// Corners
-				currentState = State.CORNERS;
-				m = empty & 0x505;
-				if (m != 0) break;
 			case CENTER:				// Center
 				currentState = State.CENTER;
 				m = empty & 0x020;
+				if (m != 0) break;
+			case CORNERS:				// Corners
+				currentState = State.CORNERS;
+				m = empty & 0x505;
 				if (m != 0) break;
 			case SIDES:					// Sides
 				currentState = State.SIDES;

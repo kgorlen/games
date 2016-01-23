@@ -8,6 +8,12 @@ public class PotionGenerator implements MoveGenerator {
 	private int lastReaction;
 	
 	private final static Reaction[] reaction = {
+			new Reaction(	// 4 tof + 7 tow + 2 af = 1 health potion
+				new Reactant(Ingredient.TOF, -4),
+				new Reactant(Ingredient.TOW, -7),
+				new Reactant(Ingredient.AF,  -2),
+				new Reactant(Ingredient.POTION, +1)
+				),
 			new Reaction(	// 4 eon + 2 wob = 3 af + 4 tow
 				new Reactant(Ingredient.EON, -4),
 				new Reactant(Ingredient.WOB, -2),
@@ -24,12 +30,6 @@ public class PotionGenerator implements MoveGenerator {
 				new Reactant(Ingredient.AF,  -2),
 				new Reactant(Ingredient.TOF, +1)					
 				),
-			new Reaction(	// 4 tof + 7 tow + 2 af = 1 health potion
-				new Reactant(Ingredient.TOF, -4),
-				new Reactant(Ingredient.TOW, -7),
-				new Reactant(Ingredient.AF,  -2),
-				new Reactant(Ingredient.POTION, +1)
-				)
 	};
 	
 	public PotionGenerator(PotionStock p, boolean debug) {

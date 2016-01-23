@@ -70,4 +70,15 @@ public interface Position {
 	 */
 	public void print();
 
+	/**
+	 * @return	hashCode for this Position
+	 */
+	public int hashCode();
+
+	/**
+	 * @param v	Position to compare
+	 * @return	true if equals
+	 */
+	public boolean equals(Object p);
+
 }
