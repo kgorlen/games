@@ -5,8 +5,8 @@ package kgorlen.games.potion;
 
 import kgorlen.games.Move;
 import kgorlen.games.Position;
+import kgorlen.games.TTEntry;
 import kgorlen.games.Variation;
-import kgorlen.games.potion.PotionVariation;
 import kgorlen.games.potion.PotionGenerator;
 
 /**
@@ -14,7 +14,7 @@ import kgorlen.games.potion.PotionGenerator;
  *
  */
 public class PotionStock implements Position {
-	private int[] amount = new int[Ingredient.values().length];
+	private int[] amount = new int[Ingredient.values.length];
 	private int numReactions = 0;
 
 	/* (non-Javadoc)
@@ -99,8 +99,8 @@ public class PotionStock implements Position {
 	 * @see kgorlen.games.Position#variation()
 	 */
 	@Override
-	public Variation variation() {
-		return new PotionVariation();
+	public Variation newVariation() {
+		return new Variation();
 	}
 
 	/* (non-Javadoc)
@@ -108,7 +108,7 @@ public class PotionStock implements Position {
 	 */
 	@Override
 	public void print(String indent) {
-		for (Ingredient i: Ingredient.values()) {
+		for (Ingredient i: Ingredient.values) {
 			System.out.format("%s%s = %d%n", indent, i, amount[i.ordinal()]);
 		}
 	}
@@ -127,7 +127,7 @@ public class PotionStock implements Position {
 	@Override
 	public int hashCode() {
 		int hashcode = 0;
-		for (Ingredient i: Ingredient.values()) {
+		for (Ingredient i: Ingredient.values) {
 			hashcode = hashcode*13 ^ amount[i.ordinal()];
 		}
 		return hashcode;
@@ -141,11 +141,24 @@ public class PotionStock implements Position {
 		if (o == null) return false;
 		if (o == this) return true;
 		if (!(o instanceof PotionStock)) return false;
-		for (Ingredient i: Ingredient.values()) {
+		for (Ingredient i: Ingredient.values) {
 			if (amount[i.ordinal()] != ((PotionStock) o).amount[i.ordinal()])
 				return false;
 		}
 		return true;
+	}
+
+	/* (non-Javadoc)
+	 * @see kgorlen.games.Position#newTTentry(int, int, kgorlen.games.Move)
+	 */
+	@Override
+	public TTEntry newTTentry(int depth, int score, Move bestMove) {
+		return new PotionTTEntry(depth, score, (Reaction) bestMove);
+	}
+
+	@Override
+	public int scoreSign() {
+		return 1;	// always maximize
 	}
 
 }

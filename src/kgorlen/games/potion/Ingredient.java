@@ -6,5 +6,7 @@ public enum Ingredient {
 	TOF,
 	WOB,
 	AF,
-	TOW
+	TOW;
+	
+	public static final Ingredient[] values = values();
 }

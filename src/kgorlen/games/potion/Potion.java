@@ -9,47 +9,109 @@
 	1 wob + 2 af = 1 tof
 	4 tof + 7 tow + 2 af = 1 health potion 
 
-	Assuming you can control the order of reactions, write a program that can calculate the maximum number of 
-	health potions one can brew with a given amount of ingredients. Here is example output: If I have 34 eon, 
-	59 tof, 20 wob, 5 af, and 20 tow, I can make seven health potions:
+	Assuming you can control the order of reactions, write a program that can calculate the
+	maximum number of health potions one can brew with a given amount of ingredients. Here
+	is example output: If I have 34 eon, 59 tof, 20 wob, 5 af, and 20 tow, I can make seven
+	health potions:
 	
-		Enter amount of EON:34
-		Enter amount of TOF:59
-		Enter amount of WOB:20
-		Enter amount of AF:5
-		Enter amount of TOW:20
-		Brewed 7 units of potion with the reactions:
-		-4TOF -7TOW -2AF +1POTION 
-		-4TOF -7TOW -2AF +1POTION 
-		-4EON -2WOB +3AF +4TOW 
-		-4TOF -7TOW -2AF +1POTION 
-		-4EON -2WOB +3AF +4TOW 
-		-4TOF -7TOW -2AF +1POTION 
-		-4EON -2WOB +3AF +4TOW 
-		-4EON -2WOB +3AF +4TOW 
-		-4TOF -7TOW -2AF +1POTION 
-		-4EON -2WOB +3AF +4TOW 
-		-4EON -2WOB +3AF +4TOW 
-		-4TOF -7TOW -2AF +1POTION 
-		-4EON -2WOB +3AF +4TOW 
-		-4EON -2WOB +3AF +4TOW 
-		-4TOF -7TOW -2AF +1POTION 
-		score=6985
-		Stock remaining:
-		POTION = 7
-		EON = 2
-		TOF = 31
-		WOB = 4
-		AF = 15
-		TOW = 3
-		9229 positions searched, 2894 TT entries, 6237 TT hits, Infinity positions/us
+	Enter amount of EON:34
+	Enter amount of TOF:59
+	Enter amount of WOB:20
+	Enter amount of AF:5
+	Enter amount of TOW:20
+	Brewed 7 units of potion with the reactions:
+	-4TOF -7TOW -2AF +1POTION 
+	-4TOF -7TOW -2AF +1POTION 
+	-4EON -2WOB +3AF +4TOW 
+	-4TOF -7TOW -2AF +1POTION 
+	-4EON -2WOB +3AF +4TOW 
+	-4TOF -7TOW -2AF +1POTION 
+	-4EON -2WOB +3AF +4TOW 
+	-4EON -2WOB +3AF +4TOW 
+	-4TOF -7TOW -2AF +1POTION 
+	-4EON -2WOB +3AF +4TOW 
+	-4EON -2WOB +3AF +4TOW 
+	-4TOF -7TOW -2AF +1POTION 
+	-4EON -2WOB +3AF +4TOW 
+	-4EON -2WOB +3AF +4TOW 
+	-4TOF -7TOW -2AF +1POTION 
+	score=6985
+	Stock remaining:
+	POTION = 7
+	EON = 2
+	TOF = 31
+	WOB = 4
+	AF = 15
+	TOW = 3
+	10899 positions searched in 0.00us (Infinity positions/us)
+	2687 TT entries, 5841 TT hits
+
+	Enter amount of EON:4
+	Enter amount of TOF:4
+	Enter amount of WOB:2
+	Enter amount of AF:0
+	Enter amount of TOW:3
+	Brewed 1 units of potion with the reactions:
+	-4EON -2WOB +3AF +4TOW 
+	-4TOF -7TOW -2AF +1POTION 
+	score=998
+	Stock remaining:
+	POTION = 1
+	EON = 0
+	TOF = 0
+	WOB = 0
+	AF = 1
+	TOW = 0
+	7 positions searched in 0.00us (Infinity positions/us)
+	2 TT entries, 0 TT hits
+
+	Enter amount of EON:0
+	Enter amount of TOF:3
+	Enter amount of WOB:1
+	Enter amount of AF:4
+	Enter amount of TOW:7
+	Brewed 1 units of potion with the reactions:
+	-1WOB -2AF +1TOF 
+	-4TOF -7TOW -2AF +1POTION 
+	score=998
+	Stock remaining:
+	POTION = 1
+	EON = 0
+	TOF = 0
+	WOB = 0
+	AF = 0
+	TOW = 0
+	9 positions searched in 0.00us (Infinity positions/us)
+	2 TT entries, 0 TT hits
+
+	Enter amount of EON:0
+	Enter amount of TOF:6
+	Enter amount of WOB:2
+	Enter amount of AF:0
+	Enter amount of TOW:9
+	Brewed 1 units of potion with the reactions:
+	-3TOW -1TOF +2EON 
+	-3TOW -1TOF +2EON 
+	-4EON -2WOB +3AF +4TOW 
+	-4TOF -7TOW -2AF +1POTION 
+	score=996
+	Stock remaining:
+	POTION = 1
+	EON = 0
+	TOF = 0
+	WOB = 0
+	AF = 1
+	TOW = 0
+	9 positions searched in 0.00us (Infinity positions/us)
+	4 TT entries, 0 TT hits
 
  */
 package kgorlen.games.potion;
 
-import java.util.ListIterator;
 import java.util.Scanner;
 import kgorlen.games.DepthFirst;
+import kgorlen.games.Move;
+import kgorlen.games.Variation;
 
 /**
  * @author Keith gorlen@comcast.net
@@ -73,14 +135,17 @@ public class Potion {
 				maxDepth += amount;			// A reaction consumes at least 1 unit of some ingredient
 			}
 			
-			PotionVariation pvar = new PotionVariation();
-			DepthFirst searchResults = new DepthFirst(pvar, Debug);
-			searchResults.search(root, maxDepth, pvar, "");
-			ListIterator<Reaction> i = pvar.listIterator(pvar.size());
-			while (i.hasPrevious()) root.makeMove(i.previous());
-			System.out.format("Brewed %d units of potion with the reactions:%n",
-					root.getAmount(Ingredient.POTION));
-			pvar.print(root);
+			DepthFirst searchResults = new DepthFirst(Debug);
+			searchResults.search(root, maxDepth, "");
+			Variation pvar = searchResults.getPrincipalVariation(root);
+			if (pvar != null) {
+				for (Move m : pvar) root.makeMove(m);
+				System.out.format("Brewed %d units of potion with the reactions:%n",
+						root.getAmount(Ingredient.POTION));
+				pvar.print(root);
+			} else {
+				System.out.println("Brewed 0 units of potion");
+			}
 			System.out.println("Stock remaining:");
 			root.print();
 			searchResults.printStatistics();
