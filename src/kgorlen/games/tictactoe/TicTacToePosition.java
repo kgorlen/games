@@ -2,6 +2,10 @@ package kgorlen.games.tictactoe;
 
 import kgorlen.games.GamePosition;
 import kgorlen.games.Move;
+import kgorlen.games.ScoreType;
+import kgorlen.games.TTEntry;
+import kgorlen.games.tictactoe.TicTacToeMove;
+import kgorlen.games.tictactoe.TicTacToeTTEntry;
 
 /**
  * Represents a Tic-Tac-Toe GamePosition using a 2-element array of
@@ -33,7 +37,7 @@ import kgorlen.games.Move;
  */
 public class TicTacToePosition implements GamePosition {
 	private short[] board;		// board[0] = Xs, board[1] = Os
-    private int moveNum;		// Count of occupied squares
+    private short moveNum;		// Count of occupied squares
 
 	/**
 	 * Construct initial (empty) board position.
@@ -226,7 +230,7 @@ public class TicTacToePosition implements GamePosition {
 		return new TicTacToeMoveGenerator(this, false);
 	}
 	
-	public TicTacToeVariation variation() {
+	public TicTacToeVariation newVariation() {
 		return new TicTacToeVariation();
 	}
 	
@@ -273,6 +277,17 @@ public class TicTacToePosition implements GamePosition {
 		return;
 	}
 
+	/* (non-Javadoc)
+	 * @see java.lang.Object#hashCode()
+	 */
+	@Override
+	public int hashCode() {
+		return board[0] | board[1]<<12;
+	}
+
+	/* (non-Javadoc)
+	 * @see java.lang.Object#equals(java.lang.Object)
+	 */
 	@Override
 	public boolean equals(Object o) {
 		if (o == null) return false;
@@ -282,4 +297,21 @@ public class TicTacToePosition implements GamePosition {
 				&& board[1] == ((TicTacToePosition) o).board[1]) return true;
 		return false;
 	}
+
+	/* (non-Javadoc)
+	 * @see kgorlen.games.GamePosition#newTTentry(int, byte, int, kgorlen.games.Move)
+	 */
+	@Override
+	public TTEntry newTTentry(int depth, ScoreType scoreType, int score, Move bestMove) {
+		return new TicTacToeTTEntry(depth, scoreType, score, (TicTacToeMove) bestMove);
+	}
+
+	/* (non-Javadoc)
+	 * @see kgorlen.games.Position#newTTentry(int, int, kgorlen.games.Move)
+	 */
+	@Override
+	public TTEntry newTTentry(int depth, int score, Move bestMove) {
+		return new TicTacToeTTEntry(depth, ScoreType.EXACT, score, (TicTacToeMove) bestMove);
+	}
+
 }

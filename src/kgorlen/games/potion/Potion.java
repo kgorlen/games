@@ -43,7 +43,7 @@
 	WOB = 4
 	AF = 15
 	TOW = 3
-	10899 positions searched in 0.00us (Infinity positions/us)
+	10899 positions searched in 70740.54us (0.15 positions/us)
 	2687 TT entries, 5841 TT hits
 
 	Enter amount of EON:4
@@ -62,7 +62,7 @@
 	WOB = 0
 	AF = 1
 	TOW = 0
-	7 positions searched in 0.00us (Infinity positions/us)
+	7 positions searched in 95.55us (0.07 positions/us)
 	2 TT entries, 0 TT hits
 
 	Enter amount of EON:0
@@ -81,7 +81,7 @@
 	WOB = 0
 	AF = 0
 	TOW = 0
-	9 positions searched in 0.00us (Infinity positions/us)
+	9 positions searched in 20.44us (0.44 positions/us)
 	2 TT entries, 0 TT hits
 
 	Enter amount of EON:0
@@ -102,7 +102,7 @@
 	WOB = 0
 	AF = 1
 	TOW = 0
-	9 positions searched in 0.00us (Infinity positions/us)
+	9 positions searched in 38.32us (0.23 positions/us)
 	4 TT entries, 0 TT hits
 
  */
@@ -136,7 +136,7 @@ public class Potion {
 			}
 			
 			DepthFirst searchResults = new DepthFirst(Debug);
-			searchResults.search(root, maxDepth, "");
+			searchResults.search(root, maxDepth);
 			Variation pvar = searchResults.getPrincipalVariation(root);
 			if (pvar != null) {
 				for (Move m : pvar) root.makeMove(m);

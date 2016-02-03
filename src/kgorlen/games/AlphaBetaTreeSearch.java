@@ -30,8 +30,7 @@ public abstract class AlphaBetaTreeSearch extends TreeSearch {
 	 * Print search statistics
 	 */
 	public void printStatistics() {
-		System.out.printf("%d positions searched, %d alpha cutoffs, %d beta cutoffs, %.2f positions/us\n",
-							positionsSearched, alphaCutoffs, betaCutoffs,
-							((float) 1000 * positionsSearched)/elapsedTime);
+		super.printStatistics();
+		System.out.printf("%d alpha cutoffs, %d beta cutoffs\n", alphaCutoffs, betaCutoffs);
 	}
 }

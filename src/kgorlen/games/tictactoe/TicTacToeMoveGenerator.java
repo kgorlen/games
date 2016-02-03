@@ -129,13 +129,13 @@ public class TicTacToeMoveGenerator implements MoveGenerator {
 					}
 					break;
 				}
-			case CENTER:				// Center
-				currentState = State.CENTER;
-				m = empty & 0x020;
-				if (m != 0) break;
 			case CORNERS:				// Corners
 				currentState = State.CORNERS;
 				m = empty & 0x505;
+				if (m != 0) break;
+			case CENTER:				// Center
+				currentState = State.CENTER;
+				m = empty & 0x020;
 				if (m != 0) break;
 			case SIDES:					// Sides
 				currentState = State.SIDES;

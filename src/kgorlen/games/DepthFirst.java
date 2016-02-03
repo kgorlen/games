@@ -2,6 +2,7 @@
  * 
  */
 package kgorlen.games;
+import kgorlen.games.Position;
 
 /**
  * @author Keith gorlen@comcast.net
@@ -9,12 +10,17 @@ package kgorlen.games;
  */
 public class DepthFirst extends TreeSearch {
 	
-	public DepthFirst(Variation pvar, boolean debug) {
-		this.principalVariation = pvar;
+	public DepthFirst(boolean debug) {
 		this.debug =debug;
 	}
 	
-	public int search(Position parent, int depth, Variation pvar, String indent) {
+	/**
+	 * @param parent	Position to be searched
+	 * @param depth		maximum depth to search
+	 * @param indent	String prepended to debug output lines
+	 * @return			maximum score
+	 */
+	public int search(Position parent, int depth, String indent) {
 		int score;				// score for *parent* Position
 		
 		if (debug) {
@@ -22,45 +28,67 @@ public class DepthFirst extends TreeSearch {
 			parent.print(indent);
 		}
 
-		Variation var = transposition.get(parent);
-		if (var != null) {
-			score = pvar.setMoves(var);
+		TTEntry ttEntry = getTTEntry(parent);
+		if (ttEntry != null) {
+			score = ttEntry.getScore();
 			ttHits++;
 			if (debug) System.out.format("%s} DepthFirst(%d) returning transposition score=%d%n",
 					indent, depth, score);
 			return score;
 		}
 		
+		score = parent.evaluate();
+
 		MoveGenerator gen = parent.moveGenerator(debug);		
-		int bestValue = parent.evaluate();
 		if (depth == 0 || !gen.hasNext()) {
-			pvar.reset();
 			if (debug) System.out.format("%s} DepthFirst(%d) returning evaluation score=%d%n",
-					indent, depth, bestValue);
-			return bestValue;			
+					indent, depth, score);
+			return score;			
 		}
 
+		int bestScore = score;		// Deeper search may not improve score
+		Move bestMove = null;
 		while (gen.hasNext()) {
 			Move move = gen.next();
 			positionsSearched++;
 			Position child = parent.copy();
 			child.makeMove(move);
-			var = parent.variation();
-			score = search(child, depth-1, var, indent + "    ");
-			var.addMove(score, move);
-			transposition.put(parent, var);
-			if (score > bestValue) {
-				bestValue = score;
-				pvar.setMoves(var);
+			if (debug) {
+				System.out.format("%sSearch move %s ...%n", indent, move.toString());
+			}
+			score = search(child, depth-1, indent + "    ");
+			if (debug) {
+				System.out.format("%s... Move %s score=%d%n", indent, move.toString(), score);
+			}
+			if (score > bestScore) {
+				bestScore = score;
+				bestMove = move;
+				ttEntry = parent.newTTentry(depth, bestScore, bestMove);
+				putTTEntry(parent, ttEntry);
 				if (debug) {
-					System.out.format("%sReaction %s score = %d%n", indent, move.toString(), score);
+					System.out.format("%sPrincipal variation:%n", indent);
+					Variation pvar = getPrincipalVariation(parent);
 					pvar.print(parent, indent);
 				}
 			}
 		}
 
 		if (debug) System.out.format("%s} DepthFirst.search(%d) returning search score=%d%n",
-				indent, depth, bestValue);
-		return bestValue;
+				indent, depth, bestScore);
+		return bestScore;
 	}
+	
+	/**
+	 * @param parent	Position to be searched
+	 * @param depth		maximum depth to search
+	 * @return			DepthFirst instance
+	 */
+	public DepthFirst search(Position root, int depth) {
+		this.root = root;
+		elapsedTime();
+		search(root, depth, "");
+		elapsedTime();
+		return this;		
+	}
+
 }

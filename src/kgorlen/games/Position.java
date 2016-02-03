@@ -9,6 +9,14 @@ package kgorlen.games;
 public interface Position {
 
 	/**
+	 * @param depth		search depth of score
+	 * @param score		position score
+	 * @param bestMove	best Move
+	 * @return
+	 */
+	public TTEntry newTTentry(int depth, int score, Move bestMove);
+	
+	/**
 	 * @return a deep copy of this Position
 	 */
 	public Position copy();
@@ -55,7 +63,7 @@ public interface Position {
 	 * 
 	 * @return	instance of a Variation for this Position
 	 */
-	public Variation variation();
+	public Variation newVariation();
 
 	/**
 	 * Print board position with indentation.  Useful for formatting tree
@@ -80,5 +88,10 @@ public interface Position {
 	 * @return	true if equals
 	 */
 	public boolean equals(Object p);
+
+	/**
+	 * @return +1 if Max to move, -1 if Min to move
+	 */
+	public int scoreSign();
 
 }

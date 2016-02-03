@@ -1,73 +1,56 @@
 package kgorlen.games;
 
-import kgorlen.games.Move;
+import java.util.ArrayList;
 
 /**
- * A Variation stores the sequence of Moves played to get to a GamePosition
+ * Manages a sequence of Moves, implemented with an ArrayList.
  * 
  * @author Keith gorlen@comcast.net
  *
  */
-public interface Variation {
-	/**
-	 * @return number of Moves in this Variation
-	 */
-	public int numMoves();
-	
-	/**
-	 * @return score of this Variation
-	 */
-	public int getScore();
+public class Variation extends ArrayList<Move> {
+	private static final long serialVersionUID = 1L;
+	private int score = 0;				// Score of this sequence of Moves
 
-	/**
-	 * @param i index of Move to get 0 - numMoves()-1
-	 * @return	specified Move
-	 */
-	public Move getMove(int i);
-	
-	/**
-	 * @param v	Variation from the current GamePosition
-	 * @return	score of Variation
-	 */
-	public int setMoves(Variation v);
-	
-	/**
-	 * @return	first Move in this Variation
-	 */
-	public Move getMove();
+	public int numMoves() {
+		return size();
+	}
 
-	/**
-	 * @param vscore	score of this Variation
-	 * @param firstMove	Move to add to the specified Variation
-	 */
-	public void addMove(int vscore, Move firstMove);
-	
-	/**
-	 * @param vscore	score of this Variation
-	 * @param firstMove	Move to add to the specified Variation
-	 * @param v			Variation from the current GamePosition
-	 */
-	public void addMoves(int vscore, Move firstMove, Variation v);
+	public int setScore(int score) {
+		this.score = score;
+		return score;
+	}
 
-	/**
-	 * Removes all Moves from this Variation
-	 */
-	public void reset();
-	
-	/**
-	 * Print Variation, indented
-	 * 
-	 * @param start		starting GamePosition of this Variation
-	 * @param indent	String to prepend to printed lines (to
-	 * 					indicate current search depth)
-	 */
-	public void print(Position start, String indent);
+	public int getScore() {
+		return score;
+	}
 
-	/**
-	 * Print Variation without indentation
-	 * 
-	 * @param start		starting GamePosition of this Variation
-	 */
-	public void print(Position start);
+	public Move getMove(int i) {
+		return get(i);
+	}
+
+	public Move getMove() {
+		return get(0);
+	}
+
+	public void addMove(Move move) {
+		add(move);
+	}
+
+	public void clear() {
+		score = 0;
+		super.clear();
+	}
+
+	public void print(Position start, String indent) {
+		for (Move move : this) {
+			System.out.println(indent + move.toString());			
+		}
+		System.out.format("%sscore=%d%n", indent, score);
+	}
+
+	public void print(Position start) {
+		print(start, "");
+	}
 
 }

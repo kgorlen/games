@@ -14,15 +14,19 @@ public interface GamePosition extends Position {
 	public GamePosition copy();
 
 	/**
+	 * @param depth		search depth of score
+	 * @param scoreType	type of score (EXACT, UPPERBOUND, LOWERBOUND)
+	 * @param score		position score
+	 * @param bestMove	best Move
+	 * @return
+	 */
+	public TTEntry newTTentry(int depth, ScoreType scoreType, int score, Move bestMove);
+	
+	/**
 	 * @return name of side to move, e.g. 'X' or 'O'
 	 */
 	public String sideToMove();
 
-	/**
-	 * @return +1 if Max to move, -1 if Min to move
-	 */
-	public int scoreSign();
-	
 	/**
      * @return	<code>true</code> if last move resulted in a win
      */

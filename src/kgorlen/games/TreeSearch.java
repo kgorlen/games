@@ -2,7 +2,7 @@ package kgorlen.games;
 
 import java.util.HashMap;
 
-import kgorlen.games.Variation;
+import kgorlen.games.TTEntry;
 
 /**
  * Support for tree searches
@@ -13,11 +13,11 @@ import kgorlen.games.Variation;
 public abstract class TreeSearch {
 	protected boolean debug = false;
 	protected long positionsSearched = 0;
-	protected Variation principalVariation = null;
-	protected HashMap<Position, Variation> transposition = new HashMap<Position, Variation>();
 	protected long ttHits = 0;
-	protected long elapsedTime = 0;
+	private long elapsedTime = 0;
 	private long startTime = System.nanoTime();
+	protected Position root;
+	private HashMap<Position, TTEntry> transTable = new HashMap<Position, TTEntry>();
 	
 	/**
 	 * @return the debug switch setting
@@ -34,16 +34,103 @@ public abstract class TreeSearch {
 	}
 
 	/**
-	 * Reset the positions searched counter
+	 * Reset the positions searched and transposition hits counter
 	 */
 	public void reset() {
 		positionsSearched = 0;
-		principalVariation = null;
-		transposition.clear();
+		ttHits = 0;
 	}
 	
 	/**
-	 * @return	milliseconds elapsed since last call or since
+	 * @param p	Position to save
+	 * @param	transposition table entry for specified Position
+	 */
+	public void putTTEntry(Position p, TTEntry ttEntry) {
+		transTable.put(p, ttEntry);
+	}
+	
+	/**
+	 * Override to handle position symmetries
+	 * 
+	 * @param p	Position to find
+	 * @return	transposition table entry for specified Position, or null
+	 */
+	public TTEntry getTTEntry(Position p) {
+		return transTable.get(p);
+	}
+	
+	/**
+	 * @return	last root Position searched
+	 */
+	public Position getRoot() {
+		return root;
+	}
+	
+	/**
+	 * @param start	starting Position of Variation
+	 * @return		principal variation from start Position
+	 */
+	public Variation getPrincipalVariation(Position start) {
+		TTEntry ttEntry = getTTEntry(start);
+		if (ttEntry == null) return null;
+		
+		Variation pvar = start.newVariation();
+		pvar.setScore(ttEntry.getScore());
+		Position nextPosition = start.copy();
+		Move nextMove;
+		do {
+			assert ttEntry.getScoreType() == ScoreType.EXACT : "Principal variation score type not EXACT";
+			assert pvar.getScore() == (this instanceof MiniMax ? ttEntry.getScore()
+					: start.scoreSign() * nextPosition.scoreSign() * ttEntry.getScore())  // NegaMax
+					: "Principal variation scores not equal";
+			nextMove = ttEntry.getMove();
+			pvar.addMove(nextMove);
+			nextPosition.makeMove(nextMove);
+		} while ((ttEntry = getTTEntry(nextPosition)) != null);
+		return pvar;
+	}
+	
+	/**
+	 * @return	principal variation from root Position
+	 */
+	public Variation getPrincipalVariation() {
+		return getPrincipalVariation(getRoot());
+	}
+
+	/**
+	 * @param start	position searched
+	 * @return	score of specified Position
+	 */
+	public int getScore(Position start) {
+		TTEntry ttEntry = getTTEntry(start);
+		return ttEntry.getScore();
+	}
+	
+	/**
+	 * @return	score of root Position
+	 */
+	public int getScore() {
+		return getScore(getRoot());
+	}
+
+	/**
+	 * @param start	position searched
+	 * @return		best move found from specified Position
+	 */
+	public Move getMove(Position start) {
+		TTEntry ttEntry = getTTEntry(start);
+		return ttEntry.getMove();
+	}
+	
+	/**
+	 * @return		best move found from root Position
+	 */
+	public Move getMove() {
+		return getMove(getRoot());		
+	}
+
+	/**
+	 * @return	nanoseconds elapsed since last call or since
 	 * 			instance created.
 	 */
 	public long elapsedTime() {
@@ -54,32 +141,11 @@ public abstract class TreeSearch {
 	}
 		
 	/**
-	 * @return	principal Variation found by search
-	 */
-	public Variation getPrincipalVariation() {
-		return principalVariation;
-	}
-	
-	/**
-	 * @return	best score found by search
-	 */
-	public int getScore() {
-		return principalVariation.getScore();
-	}
-	
-	/**
-	 * @return	best Move found by search
-	 */
-	public Move getMove() {
-		return principalVariation.getMove();
-	}
-	
-	/**
 	 * Print search statistics
 	 */
 	public void printStatistics() {
-		System.out.printf("%d positions searched, %d TT entries, %d TT hits, %.2f positions/us\n",
-							positionsSearched, transposition.size(), ttHits,
-							((float) 1000*positionsSearched)/elapsedTime);
+		System.out.printf("%d positions searched in %.2fus (%.2f positions/us)%n%d TT entries, %d TT hits\n",
+							positionsSearched, elapsedTime/1000.0, 1000.0*positionsSearched/elapsedTime,
+							transTable.size(), ttHits);
 	}
 }

@@ -2,11 +2,10 @@ package kgorlen.games.tictactoe;
 
 import java.util.Scanner;
 import kgorlen.games.tictactoe.TicTacToePosition;
-import kgorlen.games.tictactoe.TicTacToeVariation;
 import kgorlen.games.TreeSearch;
 import kgorlen.games.NegaMaxAlphaBeta;
-//import kgorlen.games.NegaMax;
-//import kgorlen.games.MiniMax;
+import kgorlen.games.NegaMax;
+import kgorlen.games.MiniMax;
 
 /**
  * @author		Keith gorlen@comcast.net
@@ -35,25 +34,28 @@ public class TicTacToe {
 	 * the side/color the machine is playing.
 	 * 
 	 * @param root		GamePosition to be searched
-	 * @return			NegaMaxAlphaBeta search instance
+	 * @return			TreeSearch search instance
 	 */
-	static NegaMaxAlphaBeta searchRoot(TicTacToePosition root) {
-		TicTacToeVariation pvar = new TicTacToeVariation();
-		NegaMaxAlphaBeta ts = new NegaMaxAlphaBeta(pvar, Debug);
-		return ts.search(root, 10);	
+	static TreeSearch searchRoot(TicTacToePosition root) {
+		TreeSearch ts = null;
+		switch(2) {
+			case 0:
+				ts = new MiniMax(Debug);
+				((MiniMax) ts).search(root, 10);
+				break;
+			case 1:
+				ts = new NegaMax(Debug);
+				((NegaMax) ts).search(root, 10);
+				break;
+			case 2:
+				ts = new NegaMaxAlphaBeta(Debug);			
+				((NegaMaxAlphaBeta) ts).search(root, 10);
+				break;
+				default:
+					throw new RuntimeException("Invalid search method");
+		}
+		return ts;
 	}
-	
-//	static MiniMax searchRoot(TicTacToePosition root) {
-//		TicTacToeVariation pvar = new TicTacToeVariation();
-//		MiniMax ts = new MiniMax(pvar, Debug);
-//		return ts.search(root, 10);	
-//	}
-	
-//	static NegaMax searchRoot(TicTacToePosition root) {
-//		TicTacToeVariation pvar = new TicTacToeVariation();
-//		NegaMax ts = new NegaMax(pvar, Debug);
-//		return ts.search(root, 10);	
-//	}
 	
 	/**
 	 * Read and play opponent's move or command.
@@ -129,10 +131,10 @@ public class TicTacToe {
 				case "o": {		// Machine plays X
 					while (!isGameOver(root)) {
 						TreeSearch searchResult = searchRoot(root);
-						root.makeMove(searchResult.getMove());
 						System.out.format("Machine's move %s (score=%d):%n",
-								(searchResult.getMove()).toString(),
-								searchResult.getScore());
+								(searchResult.getMove(root)).toString(),
+								searchResult.getScore(root));
+						root.makeMove(searchResult.getMove(root));
 						root.print();
 						searchResult.printStatistics();
 						if (isGameOver(root)) break;

@@ -6,8 +6,7 @@ import kgorlen.games.Variation;
 
 public class NegaMax extends TreeSearch {
 
-	public NegaMax(Variation pvar, boolean debug) {
-		this.principalVariation = pvar;
+	public NegaMax(boolean debug) {
 		this.debug =debug;
 	}
 	
@@ -19,12 +18,10 @@ public class NegaMax extends TreeSearch {
 	 * 
 	 * @param parent	GamePosition to be searched
 	 * @param depth		maximum depth to search
-	 * @param pvar		updated with principal Variation
 	 * @param indent	String prepended to debug output lines
 	 * @return			maximum/minimum score
 	 */
-	public int search(GamePosition parent, int depth,
-			Variation pvar, String indent) {
+	public int search(GamePosition parent, int depth, String indent) {
 	
 		int score;				// score for *parent* GamePosition
 		int color = parent.scoreSign();
@@ -35,9 +32,17 @@ public class NegaMax extends TreeSearch {
 			parent.print(indent);
 		}
 
+		TTEntry ttEntry = getTTEntry(parent);
+		if (ttEntry != null) {
+			score = ttEntry.getScore();
+			ttHits++;
+			if (debug) System.out.format("%s} negaMax.search(%s) returning transposition score=%d%n",
+					indent, parent.sideToMove(), score);
+			return score;
+		}
+		
 		if (parent.isWin()) {
 			score = color * parent.scoreWin();
-			pvar.reset();
 			if (debug) System.out.format("%s} negaMax.search(%s) returning win score=%d%n",
 					indent, parent.sideToMove(), score);
 			return score;
@@ -45,7 +50,6 @@ public class NegaMax extends TreeSearch {
 		
 		if (parent.isDraw()) {
 			score = color * parent.scoreDraw();
-			pvar.reset();
 			if (debug) System.out.format("%s} negaMax.search(%s) returning draw score=%d%n",
 					indent, parent.sideToMove(), score);
 			return score;
@@ -53,33 +57,35 @@ public class NegaMax extends TreeSearch {
 			
 		if (depth == 0) {
 			score = color * parent.evaluate();
-			pvar.reset();
 			if (debug) System.out.format("%s} negaMax.search(%s) returning evaluation score=%d%n",
 					indent, parent.sideToMove(), score);
 			return score;
 		}
 		
-		int bestValue = -999999999;
+		int bestScore = -999999999;
+		Move bestMove = null;
 		MoveGenerator gen = parent.moveGenerator(debug);		
 		while (gen.hasNext()) {
 			Move move = gen.next();
 			positionsSearched++;
 			GamePosition child = parent.copy();
 			child.makeMove(move);
-			Variation var = parent.variation();
-			score = -search(child, depth-1, var, indent + "    ");
-			if (score > bestValue) {
-				bestValue = score;
-				pvar.addMoves(score, move, var);
+			score = -search(child, depth-1, indent + "    ");
+			if (score > bestScore) {
+				bestScore = score;
+				bestMove = move;
+				ttEntry = parent.newTTentry(depth, ScoreType.EXACT, bestScore, bestMove);
+				putTTEntry(parent, ttEntry);
 				if (debug) {
+					Variation pvar = getPrincipalVariation(parent);
 					pvar.print(parent, indent);
 				}
 			}
 		}
 		
 		if (debug) System.out.format("%s} negaMax.search(%s) returning search score=%d%n",
-				indent, parent.sideToMove(), bestValue);
-		return bestValue;
+				indent, parent.sideToMove(), bestScore);
+		return bestScore;
 	}
 
 	/**
@@ -88,8 +94,9 @@ public class NegaMax extends TreeSearch {
 	 * @return			MiniMax search results
 	 */
 	public NegaMax search(GamePosition root, int maxDepth) {
+		this.root = root;
 		elapsedTime();
-		search(root, maxDepth, principalVariation, "");
+		search(root, maxDepth, "");
 		elapsedTime();
 		return this;		
 	}
