@@ -66,7 +66,7 @@ public class MiniMax extends TreeSearch {
 		Move bestMove = null;
 
 		if (maximize) {
-			bestScore = -999999999;	// -"infinity"
+			bestScore = -TreeSearch.SCORE_INFINITY;	// -"infinity"
 			while (gen.hasNext()) {
 				positionsSearched++;
 				Move move = gen.next();
@@ -85,7 +85,7 @@ public class MiniMax extends TreeSearch {
 				}
 			}
 		} else {	// minimize
-			bestScore = 999999999;	// +"infinity"
+			bestScore = TreeSearch.SCORE_INFINITY;	// +"infinity"
 			while (gen.hasNext()) {
 				positionsSearched++;
 				Move move = gen.next();
@@ -115,10 +115,10 @@ public class MiniMax extends TreeSearch {
 	 * @param maxDepth	maximum depth to search
 	 * @return			MiniMax search results
 	 */
-	public MiniMax search(GamePosition root, int maxDepth) {
-		this.root = root;
+	public MiniMax search(Position root, int maxDepth) {
+		setRoot(root);
 		elapsedTime();
-		search(root, maxDepth, root.scoreSign() > 0, "");
+		search((GamePosition) root, maxDepth, root.scoreSign() > 0, "");
 		elapsedTime();
 		return this;		
 	}

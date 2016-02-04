@@ -2,6 +2,7 @@ package kgorlen.games.tictactoe;
 
 import kgorlen.games.GamePosition;
 import kgorlen.games.Move;
+import kgorlen.games.MoveGenerator;
 import kgorlen.games.ScoreType;
 import kgorlen.games.TTEntry;
 import kgorlen.games.tictactoe.TicTacToeMove;
@@ -37,14 +38,14 @@ import kgorlen.games.tictactoe.TicTacToeTTEntry;
  */
 public class TicTacToePosition implements GamePosition {
 	private short[] board;		// board[0] = Xs, board[1] = Os
-    private short moveNum;		// Count of occupied squares
+    private short ply;		// Count of occupied squares
 
 	/**
 	 * Construct initial (empty) board position.
 	 */
 	public TicTacToePosition() {
 		board = new short[2];
-		moveNum = 0;
+		ply = 0;
 	}
 
 	/**
@@ -56,7 +57,7 @@ public class TicTacToePosition implements GamePosition {
 		board = new short[2];
 		board[0] = p.board[0];
 		board[1] = p.board[1];
-		moveNum = p.moveNum;
+		ply = p.ply;
 	}
 
 	public TicTacToePosition copy() {
@@ -70,20 +71,20 @@ public class TicTacToePosition implements GamePosition {
  * 
  */
 	
-	public final int numMoves() { 		// Return number moves made
-		return moveNum;
+	public final int getPly() { 		// Return number moves made
+		return ply;
     }
 
 	public final String sideToMove() { 	// Return 0 = X, 1 = O
-		return ((moveNum & 1) == 0) ? "X" : "O";
+		return ((ply & 1) == 0) ? "X" : "O";
     }
 
 	public final int scoreSign() { 	// Return 1 = X, -1 = O
-		return ((moveNum & 1) == 0) ? 1 : -1;
+		return ((ply & 1) == 0) ? 1 : -1;
     }
 	
 	public final int numEmpty()	{	// Return number of empty squares
-		return 9 - moveNum;
+		return 9 - ply;
 	}
 	
 	public final short occupied() {	// Return mask of all occupied squares
@@ -94,14 +95,14 @@ public class TicTacToePosition implements GamePosition {
 	 * @return mask of squares occupied by side on move
 	 */
 	public final short occupiedOnMove() {
-		return (short) board[moveNum & 1];
+		return (short) board[ply & 1];
     }
     
 	/**
 	 * @return mask of squares occupied by side off move
 	 */
 	public final short occupiedOffMove() {
-		return (short) board[~moveNum & 1];
+		return (short) board[~ply & 1];
     }
     
 	public final short empty()	{	// Return mask of empty squares
@@ -143,8 +144,8 @@ public class TicTacToePosition implements GamePosition {
 	public void makeMove(short mv) {
 		assert isValidMove(mv): "Invalid move: 0x" + Integer.toHexString(mv);
 		
-		board[moveNum & 1] |= mv;	// What would board[moveNum++ & 1] |= mv do?
-		moveNum++;
+		board[ply & 1] |= mv;	// What would board[ply++ & 1] |= mv do?
+		ply++;
 		return;
     }
 
@@ -152,14 +153,14 @@ public class TicTacToePosition implements GamePosition {
      * @return	true if last move made 3-in-a-row
      */
     public boolean isWin() {
-		if (moveNum < 5) return false;	// Win requires at least 5 moves
+		if (ply < 5) return false;	// Win requires at least 5 moves
 	
-		int m = board[~moveNum & 1];	// 1 - moveNum%2 (i.e. check X's if O's turn)
+		int m = board[~ply & 1];	// 1 - ply%2 (i.e. check X's if O's turn)
 		if ((m & 0x421) == 0x421) return true;		// 1-5-9 diagonal
 		if ((m & 0x124) == 0x124) return true;		// 3-5-7 diagonal
 		if (((m &= m<<1) != 0)
 				&& ((m &= m<<1) != 0)) return true;	// 3 in a row
-		m = board[~moveNum & 1];
+		m = board[~ply & 1];
 		if ((m & m<<4 & m<<8) != 0) return true;	// 3 in a column
 		
 		return false;
@@ -169,7 +170,7 @@ public class TicTacToePosition implements GamePosition {
 	 * @return	<code>true</code> if this GamePosition is a draw
 	 */
 	public boolean isDraw() {	// Return true if draw
-		if (moveNum == 9) return true;	// All squares filled
+		if (ply == 9) return true;	// All squares filled
 /*
  * These additional checks reduce the number of positions searched by
  * MiniMax of an empty board from 549,945 to 526,905.  Note that all
@@ -177,11 +178,11 @@ public class TicTacToePosition implements GamePosition {
 */				
 		TicTacToePosition winsq = new TicTacToePosition(this);
 		winsq.board[0] |= empty();		// Fill empty squares with X's
-		winsq.moveNum = 5;				// to check for possible win by X
+		winsq.ply = 5;				// to check for possible win by X
 		if (winsq.isWin()) return false;	// X can still win
 		
 		winsq.board[1] |= empty();		// Fill empty squares with O's
-		winsq.moveNum = 6;				// to check for possible win by O
+		winsq.ply = 6;				// to check for possible win by O
 		if (winsq.isWin()) return false;	// O can still win
 				
 		return true;
@@ -199,7 +200,7 @@ public class TicTacToePosition implements GamePosition {
 	 * 			score.
 	 */
 	public int scoreWin() {
-		return ((moveNum&1) != 0) ? (10-moveNum) : -(10-moveNum);
+		return ((ply&1) != 0) ? (10-ply) : -(10-ply);
 	}
 
 	/**
@@ -222,12 +223,17 @@ public class TicTacToePosition implements GamePosition {
 		throw new RuntimeException("Not implemented");
 	}
 	
+	@Override
+	public MoveGenerator moveGenerator(Move[] killers, boolean debug) {
+		return new TicTacToeMoveGenerator(this, killers, debug);
+	}
+
 	public TicTacToeMoveGenerator moveGenerator(boolean debug) {
-		return new TicTacToeMoveGenerator(this, debug);
+		return new TicTacToeMoveGenerator(this, null, debug);
 	}
 
 	public TicTacToeMoveGenerator moveGenerator() {
-		return new TicTacToeMoveGenerator(this, false);
+		return new TicTacToeMoveGenerator(this, null, false);
 	}
 	
 	public TicTacToeVariation newVariation() {

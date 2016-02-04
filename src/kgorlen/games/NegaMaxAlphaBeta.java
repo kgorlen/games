@@ -86,10 +86,10 @@ public class NegaMaxAlphaBeta extends AlphaBetaTreeSearch {
 			return score;
 		}
 		
-		int bestScore = -999999999;		// -"infinity"
+		int bestScore = -TreeSearch.SCORE_INFINITY;
 		ScoreType scoreType = ScoreType.INVALID;
 		Move bestMove = null;
-		MoveGenerator gen = parent.moveGenerator(debug);		
+		MoveGenerator gen = parent.moveGenerator(getKillers(parent.getPly()), debug);		
 		assert gen.hasNext() : "Unexpected terminal position";
 		while (gen.hasNext()) {
 			positionsSearched++;
@@ -108,7 +108,10 @@ public class NegaMaxAlphaBeta extends AlphaBetaTreeSearch {
 				bestMove = move;
 			}
 			if (score > alpha) alpha = score;	// possible PV-node
-			if (alpha >= beta) break;			// searched a Cut-Node
+			if (alpha >= beta) {				// searched a Cut-Node
+				addKiller(parent.getPly(), bestMove);
+				break;
+			}
 		}
 
 		if (bestScore <= alphaOrig) {			// searched an All-Node
@@ -136,10 +139,10 @@ public class NegaMaxAlphaBeta extends AlphaBetaTreeSearch {
 	 * @param maxDepth	maximum depth to search
 	 * @return			NegaMaxAlphaBeta search results
 	 */
-	public NegaMaxAlphaBeta search(GamePosition root, int maxDepth) {
-		this.root = root;
+	public NegaMaxAlphaBeta search(Position root, int maxDepth) {
+		setRoot(root);
 		elapsedTime();
-		search(root, maxDepth, -999999999, +999999999, "");
+		search((GamePosition) root, maxDepth, -TreeSearch.SCORE_INFINITY, +TreeSearch.SCORE_INFINITY, "");
 		elapsedTime();
 		return this;
 	}

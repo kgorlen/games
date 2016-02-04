@@ -13,16 +13,17 @@ import kgorlen.games.MoveGenerator;
  */
 public class TicTacToeMoveGenerator implements MoveGenerator {
 	private static enum State {
-		INITIAL, REFUTE, THREATEN_159, THREATEN_357,
+		INITIAL, KILLER, THREATEN_159, THREATEN_357,
 		THREATEN_ROW,  THREATEN_COL, CENTER, CORNERS, SIDES
 	};
 	
-	boolean debug;
-	State currentState;
-	TicTacToePosition currentPosition;	// current GamePosition
-    int empty;							// remaining empty squares
-    int mysq;							// squares occupied by side on move
-    int opsq;							// squares occupied by side off move
+	private boolean debug;
+	private State currentState;
+	private TicTacToePosition currentPosition;	// current GamePosition
+	private Move[] killers;						// killer moves from sibling positions
+	private int empty;							// remaining empty squares
+	private int mysq;							// squares occupied by side on move
+	private int opsq;							// squares occupied by side off move
 	
 	/**
 	 * Initialize move generator
@@ -46,17 +47,18 @@ public class TicTacToeMoveGenerator implements MoveGenerator {
 	 * 
 	 * @param p	starting/current GamePosition
 	 */
-	public TicTacToeMoveGenerator(TicTacToePosition p, boolean debug) {
+	public TicTacToeMoveGenerator(TicTacToePosition p, Move[] killers, boolean debug) {
 		this.debug = debug;
 		currentState = State.INITIAL;
 		currentPosition = p;
+		this.killers = killers;
 		empty = p.empty();
 		mysq = p.occupiedOnMove();
 		opsq = p.occupiedOffMove();
 	}
 	
 	public TicTacToeMoveGenerator(TicTacToePosition p) {
-		this(p, false);
+		this(p, null, false);
 	}
 	
 	/**
@@ -81,12 +83,24 @@ public class TicTacToeMoveGenerator implements MoveGenerator {
 		if (empty == 0) throw new NoSuchElementException();
 		
 		short nextMove;
-		int m;
+		int m = 0;
 		switch (currentState) {
 			case INITIAL:
-			case REFUTE:		// Search move from principal variation
-				currentState = State.REFUTE;
-				// Not yet implemented
+			case KILLER:			// beta cutoff moves from sibling position searches
+				currentState = State.KILLER;
+				for (int i=0; i<killers.length; i++) {
+					if (killers[i] == null) break;
+					m = empty & ((TicTacToeMove) killers[i]).toShort();
+					if (m != 0) break;
+				}
+				if (m != 0) {
+					if (debug) {
+						System.out.format("%s killer move=%03x, position:%n",
+								currentPosition.sideToMove(), m);
+						currentPosition.print();
+					}
+					break;
+				}
 			case THREATEN_159:						// Threaten or win 1-5-9 diagonal
 				currentState = State.THREATEN_159;
 				m = empty & 0x421;

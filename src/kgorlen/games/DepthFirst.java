@@ -84,7 +84,7 @@ public class DepthFirst extends TreeSearch {
 	 * @return			DepthFirst instance
 	 */
 	public DepthFirst search(Position root, int depth) {
-		this.root = root;
+		setRoot(root);
 		elapsedTime();
 		search(root, depth, "");
 		elapsedTime();

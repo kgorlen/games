@@ -62,7 +62,7 @@ public class NegaMax extends TreeSearch {
 			return score;
 		}
 		
-		int bestScore = -999999999;
+		int bestScore = -TreeSearch.SCORE_INFINITY;
 		Move bestMove = null;
 		MoveGenerator gen = parent.moveGenerator(debug);		
 		while (gen.hasNext()) {
@@ -93,10 +93,10 @@ public class NegaMax extends TreeSearch {
 	 * @param maxDepth	maximum depth to search
 	 * @return			MiniMax search results
 	 */
-	public NegaMax search(GamePosition root, int maxDepth) {
-		this.root = root;
+	public NegaMax search(Position root, int maxDepth) {
+		setRoot(root);
 		elapsedTime();
-		search(root, maxDepth, "");
+		search((GamePosition) root, maxDepth, "");
 		elapsedTime();
 		return this;		
 	}

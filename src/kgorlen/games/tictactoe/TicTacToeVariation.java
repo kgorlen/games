@@ -18,7 +18,7 @@ class TicTacToeVariation extends Variation {
 	public void print(Position start, String indent) {
 		System.out.print(indent);
 		System.out.println("Variation score: " + Integer.toString(getScore())
-								+ " move #" + Integer.toString(start.numMoves()));
+								+ " move #" + Integer.toString(start.getPly()));
 		int i;
 		for (i=0; i<3; i++) {
 			StringBuilder line = new StringBuilder();

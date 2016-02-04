@@ -22,9 +22,9 @@ public interface Position {
 	public Position copy();
 
 	/**
-	 * @return number of moves made before this Position
+	 * @return number of moves made to reach this Position
 	 */
-	public int numMoves();
+	public int getPly();
 
 	/**
 	 * Check specified move for validity.
@@ -54,6 +54,8 @@ public interface Position {
 	 * @param debug enable/disable debug; default: false
 	 * @return	instance of a MoveGenerator for this Position
 	 */
+	public MoveGenerator moveGenerator(Move[] killers, boolean debug);
+
 	public MoveGenerator moveGenerator(boolean debug);
 
 	public MoveGenerator moveGenerator();

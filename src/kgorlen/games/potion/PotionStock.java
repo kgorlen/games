@@ -4,6 +4,7 @@
 package kgorlen.games.potion;
 
 import kgorlen.games.Move;
+import kgorlen.games.MoveGenerator;
 import kgorlen.games.Position;
 import kgorlen.games.TTEntry;
 import kgorlen.games.Variation;
@@ -48,7 +49,7 @@ public class PotionStock implements Position {
 	 * @see kgorlen.games.Position#numMoves()
 	 */
 	@Override
-	public int numMoves() {
+	public int getPly() {
 		return numReactions;
 	}
 
@@ -75,8 +76,14 @@ public class PotionStock implements Position {
 	 */
 	@Override
 	public int evaluate() {
-		return 1000*amount[Ingredient.POTION.ordinal()] 
-				- numReactions;	// penalize if more reactions
+		return amount[Ingredient.POTION.ordinal()];
+//		return 1000*amount[Ingredient.POTION.ordinal()] 
+//				- numReactions;	// penalize if more reactions
+	}
+
+	@Override
+	public MoveGenerator moveGenerator(Move[] killers, boolean debug) {
+		return new PotionGenerator(this, debug);
 	}
 
 	/* (non-Javadoc)

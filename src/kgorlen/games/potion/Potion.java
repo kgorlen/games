@@ -137,11 +137,11 @@ public class Potion {
 			
 			DepthFirst searchResults = new DepthFirst(Debug);
 			searchResults.search(root, maxDepth);
-			Variation pvar = searchResults.getPrincipalVariation(root);
+			Variation pvar = searchResults.getPrincipalVariation();
 			if (pvar != null) {
+				int brewed = searchResults.getScore();
 				for (Move m : pvar) root.makeMove(m);
-				System.out.format("Brewed %d units of potion with the reactions:%n",
-						root.getAmount(Ingredient.POTION));
+				System.out.format("Brewed %d units of potion with the reactions:%n", brewed);
 				pvar.print(root);
 			} else {
 				System.out.println("Brewed 0 units of potion");

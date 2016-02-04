@@ -11,13 +11,30 @@ import kgorlen.games.TTEntry;
  *
  */
 public abstract class TreeSearch {
+	final static public int SCORE_INFINITY = 999999999;
+	
 	protected boolean debug = false;
 	protected long positionsSearched = 0;
 	protected long ttHits = 0;
 	private long elapsedTime = 0;
 	private long startTime = System.nanoTime();
-	protected Position root;
-	private HashMap<Position, TTEntry> transTable = new HashMap<Position, TTEntry>();
+	private Position root;
+	private HashMap<Position, TTEntry> transTable;
+	
+	TreeSearch(int ttCapacity) {
+		transTable =  new HashMap<Position, TTEntry>(ttCapacity);
+	}
+	
+	TreeSearch() {
+		transTable =  new HashMap<Position, TTEntry>(4096);
+	}
+	
+	/**
+	 * @param root		Position to be searched
+	 * @param maxDepth	maximum search depth
+	 * @return
+	 */
+	public abstract TreeSearch search(Position root, int maxDepth);
 	
 	/**
 	 * @return the debug switch setting
@@ -34,9 +51,11 @@ public abstract class TreeSearch {
 	}
 
 	/**
-	 * Reset the positions searched and transposition hits counter
+	 * Reset the positions searched and transposition table
 	 */
-	public void reset() {
+	public void setRoot(Position root) {
+		this.root = root;
+		transTable.clear();
 		positionsSearched = 0;
 		ttHits = 0;
 	}

@@ -100,12 +100,12 @@ public class TicTacToe {
 	 * @return	true if game drawn or won
 	 */
 	static boolean isGameOver(TicTacToePosition p) {	// Test and announce game over
-		if (p.isDraw()) {
-			System.out.println("Draw");
-			return true;
-		}
 		if (p.isWin()) {
 			System.out.println((p.sideToMove() == "X") ? "O wins!" : "X wins!");
+			return true;
+		}
+		if (p.isDraw()) {
+			System.out.println("Draw");
 			return true;
 		}
 		return false;
@@ -119,7 +119,22 @@ public class TicTacToe {
 	public static void main(String []args){
 	
 		while (true) {
+			TreeSearch ts = null;
+			switch(2) {			// to choose search algorithm
+			case 0:
+				ts = new MiniMax(Debug);
+				break;
+			case 1:
+				ts = new NegaMax(Debug);
+				break;
+			case 2:
+				ts = new NegaMaxAlphaBeta(Debug);			
+				break;
+				default:
+					throw new RuntimeException("Invalid search method");
+			}
 			TicTacToePosition root = new TicTacToePosition();	// Initialize game
+
 			System.out.print("Enter 'x', 'o', 'd', or 'q':");
 			String cmd = Input.next();
 			switch (cmd) {
@@ -130,13 +145,13 @@ public class TicTacToe {
 				case "O":
 				case "o": {		// Machine plays X
 					while (!isGameOver(root)) {
-						TreeSearch searchResult = searchRoot(root);
+						ts.search(root, 10);
 						System.out.format("Machine's move %s (score=%d):%n",
-								(searchResult.getMove(root)).toString(),
-								searchResult.getScore(root));
-						root.makeMove(searchResult.getMove(root));
+								(ts.getMove(root)).toString(),
+								ts.getScore(root));
+						root.makeMove(ts.getMove(root));
 						root.print();
-						searchResult.printStatistics();
+						ts.printStatistics();
 						if (isGameOver(root)) break;
 						opponentsMove(root);
 					} ;
