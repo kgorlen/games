@@ -5,6 +5,7 @@ import java.util.Scanner;
 import kgorlen.games.MonteCarloTreeSearch;
 import kgorlen.games.Move;
 import kgorlen.games.TreeSearch;
+import kgorlen.games.Variation;
 
 
 /**
@@ -103,11 +104,12 @@ public class Connect4 {
 						mcts.search(root, SEARCH_LIMIT);
 						System.out.print("Monte Carlo search statistics:\n");
 						mcts.printStatistics();
-						Move move = mcts.getMove(root);
+						Variation pv = mcts.getPrincipalVariation();
+						Move move = pv.getMove();
 						System.out.printf("%d. Machine's move %s (score=%d):%n",
 								root.getPly()+1,
 								move.toString(),
-								mcts.getScore(root));
+								pv.getScore());
 						root.makeMove(move);
 						root.print();
 						if (isGameOver(root)) break;

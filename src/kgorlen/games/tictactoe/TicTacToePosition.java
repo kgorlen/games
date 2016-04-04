@@ -120,27 +120,23 @@ public class TicTacToePosition implements GamePosition {
 	}
 
 	public boolean isValidMove(short mv) {
-		if ((mv & 0x777) == 0 )		// Invalid move mask
-			return false;
-		
-		if ((mv & ~0x777) != 0 )	// Invalid move mask
-			return false;
-		
-		if ((occupied() & mv) != 0)	// Square already occupied
-			return false;
-		
-		return true;
+		// one bit set for an empty square
+		return (mv & (mv-1)) == 0 && (empty() & mv) != 0;
     }	
+
+	/* (non-Javadoc)
+	 * @see kgorlen.games.Position#makeMove(kgorlen.games.Move)
+	 */
+	@Override
+	public void makeMove(Move mv) {
+		makeMove(((TicTacToeMove)mv).toShort());
+	}
 
 	/**
 	 * Make specified move.
 	 * 
 	 * @param mv	bitmask of move
 	 */
-	public void makeMove(Move mv) {
-		makeMove(((TicTacToeMove)mv).toShort());
-	}
-
 	public void makeMove(short mv) {
 		assert isValidMove(mv): "Invalid move: 0x" + Integer.toHexString(mv);
 		
@@ -219,7 +215,7 @@ public class TicTacToePosition implements GamePosition {
 	 * 
 	 * @return	throws unchecked RuntimeException
 	 */
-	public int evaluate() {		// Evaluate a quiescent position
+	public int evaluate(boolean debug) {		// Evaluate a quiescent position
 		throw new RuntimeException("Not implemented");
 	}
 	
@@ -229,11 +225,11 @@ public class TicTacToePosition implements GamePosition {
 	}
 
 	public TicTacToeMoveGenerator moveGenerator(boolean debug) {
-		return new TicTacToeMoveGenerator(this, null, debug);
+		return new TicTacToeMoveGenerator(this, new Move[0], debug);
 	}
 
 	public TicTacToeMoveGenerator moveGenerator() {
-		return new TicTacToeMoveGenerator(this, null, false);
+		return new TicTacToeMoveGenerator(this, new Move[0], false);
 	}
 	
 	public TicTacToeVariation newVariation() {
@@ -247,6 +243,7 @@ public class TicTacToePosition implements GamePosition {
 	 * @param row	index of row to format, range 0-2
 	 * @return		three-character string
 	 */
+	@Override
 	public String rowToString(int row) {
 		short sq = (short)(4 << 4*(2-row));		// Current square mask		
 		String s = "";
@@ -269,6 +266,7 @@ public class TicTacToePosition implements GamePosition {
 	 * 
 	 * @param indent	string of spaces prepended to each row of board
 	 */
+	@Override
 	public void print(String indent) {
 		for (int i = 0; i < 3; i++) {
 			System.out.println(indent + rowToString(i));
@@ -278,6 +276,7 @@ public class TicTacToePosition implements GamePosition {
 	/**
 	 * Print board position without indentation.
 	 */
+	@Override
 	public void print() {
 		print("");
 		return;

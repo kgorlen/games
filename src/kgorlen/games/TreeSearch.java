@@ -163,7 +163,7 @@ public abstract class TreeSearch {
 	 * Print search statistics
 	 */
 	public void printStatistics() {
-		System.out.printf("%d positions searched in %.2fus (%.2f positions/us)%n%d TT entries, %d TT hits\n",
+		System.out.format("%d positions searched in %.2fus (%.2f positions/us)%n%d TT entries, %d TT hits%n",
 							positionsSearched, elapsedTime/1000.0, 1000.0*positionsSearched/elapsedTime,
 							transTable.size(), ttHits);
 	}

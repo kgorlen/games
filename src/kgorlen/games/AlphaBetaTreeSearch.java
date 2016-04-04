@@ -69,6 +69,6 @@ public abstract class AlphaBetaTreeSearch extends TreeSearch {
 	 */
 	public void printStatistics() {
 		super.printStatistics();
-		System.out.printf("%d alpha cutoffs, %d beta cutoffs\n", alphaCutoffs, betaCutoffs);
+		System.out.format("%d alpha cutoffs, %d beta cutoffs%n", alphaCutoffs, betaCutoffs);
 	}
 }

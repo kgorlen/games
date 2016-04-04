@@ -75,7 +75,7 @@ public class PotionStock implements Position {
 	 * @see kgorlen.games.Position#evaluate()
 	 */
 	@Override
-	public int evaluate() {
+	public int evaluate(boolean debug) {
 		return amount[Ingredient.POTION.ordinal()];
 //		return 1000*amount[Ingredient.POTION.ordinal()] 
 //				- numReactions;	// penalize if more reactions
@@ -110,6 +110,15 @@ public class PotionStock implements Position {
 		return new Variation();
 	}
 
+	/* (non-Javadoc)
+	 * @see kgorlen.games.Position#rowToString(int)
+	 */
+	@Override
+	public String rowToString(int row) {
+		Ingredient i = Ingredient.values[row];
+		return String.format("%s = %d", i, amount[i.ordinal()]);
+	}	
+	
 	/* (non-Javadoc)
 	 * @see kgorlen.games.Position#print(java.lang.String)
 	 */

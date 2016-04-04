@@ -65,13 +65,6 @@ public class NegaMaxAlphaBeta extends AlphaBetaTreeSearch {
 			}
 		}		
 		
-		if (parent.isWin()) {
-			score = color * parent.scoreWin();
-			if (debug) System.out.format("%s} negaMaxAlphaBeta.search(%s) returning win score=%d%n",
-					indent, parent.sideToMove(), score);
-			return score;
-		}
-		
 		if (parent.isDraw()) {
 			score = color * parent.scoreDraw();
 			if (debug) System.out.format("%s} negaMaxAlphaBeta.search(%s) returning draw score=%d%n",
@@ -79,8 +72,15 @@ public class NegaMaxAlphaBeta extends AlphaBetaTreeSearch {
 			return score;
 		}
 			
+		if (parent.isWin()) {
+			score = color * parent.scoreWin();
+			if (debug) System.out.format("%s} negaMaxAlphaBeta.search(%s) returning win score=%d%n",
+					indent, parent.sideToMove(), score);
+			return score;
+		}
+		
 		if (depth == 0) {
-			score = color * parent.evaluate();
+			score = color * parent.evaluate(debug);
 			if (debug) System.out.format("%s} negaMaxAlphaBeta.search(%s) returning evaluation score=%d%n",
 					indent, parent.sideToMove(), score);
 			return score;

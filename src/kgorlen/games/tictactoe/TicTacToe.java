@@ -30,34 +30,6 @@ public class TicTacToe {
 	}
 
 	/**
-	 * Call tree search method for current GamePosition, maximizing for
-	 * the side/color the machine is playing.
-	 * 
-	 * @param root		GamePosition to be searched
-	 * @return			TreeSearch search instance
-	 */
-	static TreeSearch searchRoot(TicTacToePosition root) {
-		TreeSearch ts = null;
-		switch(2) {
-			case 0:
-				ts = new MiniMax(Debug);
-				((MiniMax) ts).search(root, 10);
-				break;
-			case 1:
-				ts = new NegaMax(Debug);
-				((NegaMax) ts).search(root, 10);
-				break;
-			case 2:
-				ts = new NegaMaxAlphaBeta(Debug);			
-				((NegaMaxAlphaBeta) ts).search(root, 10);
-				break;
-				default:
-					throw new RuntimeException("Invalid search method");
-		}
-		return ts;
-	}
-	
-	/**
 	 * Read and play opponent's move or command.
 	 * 
 	 * @param p	current board position
@@ -119,20 +91,9 @@ public class TicTacToe {
 	public static void main(String []args){
 	
 		while (true) {
-			TreeSearch ts = null;
-			switch(2) {			// to choose search algorithm
-			case 0:
-				ts = new MiniMax(Debug);
-				break;
-			case 1:
-				ts = new NegaMax(Debug);
-				break;
-			case 2:
-				ts = new NegaMaxAlphaBeta(Debug);			
-				break;
-				default:
-					throw new RuntimeException("Invalid search method");
-			}
+			TreeSearch miniMax = new MiniMax(Debug);
+			TreeSearch negaMax = new NegaMax(Debug);
+			TreeSearch negaMaxPruned = new NegaMaxAlphaBeta(Debug);;
 			TicTacToePosition root = new TicTacToePosition();	// Initialize game
 
 			System.out.print("Enter 'x', 'o', 'd', or 'q':");
@@ -145,13 +106,26 @@ public class TicTacToe {
 				case "O":
 				case "o": {		// Machine plays X
 					while (!isGameOver(root)) {
-						ts.search(root, 10);
+						negaMax.search(root, 10);
+						TicTacToeMoveGenerator.resetStatistics();
+						negaMaxPruned.search(root, 10);
+						if (((TicTacToeMove) negaMaxPruned.getMove(root)).toShort() !=
+								((TicTacToeMove) negaMax.getMove(root)).toShort()) {
+							System.out.format("NegaMax move %s (score=%d):%n",
+									negaMax.getMove(root).toString(),
+									negaMax.getScore(root));
+							
+						}
+						System.out.print("NegaMax search statistics:\n");
+						negaMax.printStatistics();
+						System.out.print("NegaMaxAlphaBeta search statistics:\n");
+						negaMaxPruned.printStatistics();
+						TicTacToeMoveGenerator.printStatistics();
 						System.out.format("Machine's move %s (score=%d):%n",
-								(ts.getMove(root)).toString(),
-								ts.getScore(root));
-						root.makeMove(ts.getMove(root));
+								negaMaxPruned.getMove(root).toString(),
+								negaMaxPruned.getScore(root));
+						root.makeMove(negaMaxPruned.getMove(root));
 						root.print();
-						ts.printStatistics();
 						if (isGameOver(root)) break;
 						opponentsMove(root);
 					} ;

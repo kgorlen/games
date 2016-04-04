@@ -14,7 +14,7 @@ import kgorlen.games.Move;
  */
 public class TicTacToeMove implements Move {
 	/**
-	 * Moves are represented as a bitmask.  One of bits 0-9 is
+	 * Moves are represented as a bitmask.  One of the bits 0-11 is
 	 * set to indicate the square to be occupied by the side
 	 * playing the move.
 	 */
@@ -59,6 +59,7 @@ public class TicTacToeMove implements Move {
 	/* (non-Javadoc)
 	 * @see java.lang.Object#toString()
 	 */
+	@Override
 	public String toString() {
 		int m = (move & 0x7) | (move & 0x7<<4) >>1 | (move & 0x7<<8) >>2;
 		return Integer.toString(9-Integer.numberOfTrailingZeros(m));

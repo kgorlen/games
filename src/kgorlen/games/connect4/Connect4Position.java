@@ -62,7 +62,7 @@ public class Connect4Position extends MonteCarloTreeNode {
 	 * @param p	board position to copy
 	 */
 	public Connect4Position(Connect4Position p) {
-		super(p);
+		super(p);		// Superclass fields initialized, not copied
 		board = new long[2];
 		board[0] = p.board[0];
 		board[1] = p.board[1];
@@ -111,11 +111,11 @@ public class Connect4Position extends MonteCarloTreeNode {
 	 * @return		seven-character string
 	 */
 	public String rowToString(int row) {
-		String s = "";
+		String s = "|";
 	    for (long m = 1L<<((COLS-1)*8+(ROWS-row)); m > 0; m >>= 8) {
-			if ((board[0] & m) != 0) s += 'X';
-			else if ((board[1] & m) != 0) s += 'O';
-			else s += '.';
+			if ((board[0] & m) != 0) s += "X|";
+			else if ((board[1] & m) != 0) s += "O|";
+			else s += " |";
 		}
 		return s;
 	}
@@ -126,9 +126,9 @@ public class Connect4Position extends MonteCarloTreeNode {
     @Override
     public void print(String indent) {	// Print board
 		for (int i=1; i<=ROWS; i++) {
-		    System.out.println(indent + rowToString(i));
+		    System.out.println(indent + i + rowToString(i));
 	    }
-		System.out.println(indent + "ABCDEFG");
+		System.out.println(indent + "  A B C D E F G ");
 	}
 
 	/* (non-Javadoc)
@@ -232,7 +232,7 @@ public class Connect4Position extends MonteCarloTreeNode {
 	@Override
 	public int scoreSign() {
 		assert AISide != 0 : "setAISide() not called";
-		return AISide * 1 - (~ply<<1 & 2);
+		return AISide * (1 - (~ply<<1 & 2));
 	}
 
 	@Override
@@ -263,9 +263,11 @@ public class Connect4Position extends MonteCarloTreeNode {
 	 * Convert column letter to a move bitmask
 	 * 
 	 * @param col column letter A-G
+	 * @return move bitmask, or 0 if illegal move
 	 */
 	public long columnMove(char letter) {
-		return ((1L<<ROWS)-1)<<(COLS-(letter-'A')-1<<3) & moves();
+		return (letter < 'A' || letter > 'G') ? 0
+				: ((1L<<ROWS)-1)<<(COLS-(letter-'A')-1<<3) & moves();
 	}
 
 	/**

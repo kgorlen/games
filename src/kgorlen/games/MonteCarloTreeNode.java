@@ -8,9 +8,23 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 
+/**
+ * @author Keith gorlen@comcast.net
+ * 
+ * References:
+ * https://jeffbradberry.com/posts/2015/09/intro-to-monte-carlo-tree-search/
+ * http://www.cameronius.com/research/mcts/about/index.html
+ * http://scalab.uc3m.es/~seminarios/seminar11/slides/lucas2.pdf
+ * http://mcts.ai/code/java.html
+ * https://spin.atomicobject.com/2015/12/12/monte-carlo-tree-search-algorithm-game-ai/
+ * https://github.com/PetterS/monte-carlo-tree-search
+ * https://github.com/memo/ofxMSAmcts
+ *
+ */
 public abstract class MonteCarloTreeNode implements GamePosition {
     static final double C = Math.sqrt(2);	// Upper confidence bound for Trees (UCT) coefficient
-    static final double EPSILON = 1e-6;
+    static final double EPSILON = 1e-6;		// Small random number 0-EPSILON to break ties in unexpanded nodes
+    static final int MAX_DEPTH = 6*7;		// Specific to Connect4--generalize
 	
 	protected static Random randNum = new Random(424242424242424247L);  // Fixed seed for debugging
     protected static int rootPly;	// ply at root of search tree
@@ -18,8 +32,8 @@ public abstract class MonteCarloTreeNode implements GamePosition {
 
     protected Move move;			// Move from parent to this child
     private List<MonteCarloTreeNode> children;
-    private int totValue;
-    private int nVisits;
+    private int score;
+    private int visits;
 
     static public void setSeed() {
     	randNum = new Random(424242424242424247L);  // Fixed seed for debugging
@@ -44,27 +58,27 @@ public abstract class MonteCarloTreeNode implements GamePosition {
      */
     public MonteCarloTreeNode(MonteCarloTreeNode n) {
     	children = n.children;
-    	nVisits = n.nVisits;
-    	totValue = n.totValue;
+    	visits = n.visits;
+    	score = n.score;
     }
     
     public void reset() {
     	move = null;
     	children = null;
-    	nVisits = 0;
-    	totValue = 0;    	
+    	visits = 0;
+    	score = 0;    	
     }
     
     public Move getMove() {
     	return move;
     }
     
-    public int getWins() {
-    	return totValue;
+    public int getScore() {
+    	return score;
     }
     
     public int getVisits() {
-    	return nVisits;
+    	return visits;
     }
  
     /**
@@ -72,17 +86,17 @@ public abstract class MonteCarloTreeNode implements GamePosition {
      * 			as per Rule of Sample Proportions.
      * 			Note: 95% confidence interval is +- 2*stdDev()
      */
-    public double stdDev() {
-    	double prop = ((double) totValue)/nVisits;
-    	double stddev = Math.sqrt((prop * (1-prop))/nVisits);
-    	return 100*stddev/nVisits;
+    public double getStdDev() {
+    	double prop = ((double) score)/visits;
+    	double stddev = Math.sqrt((prop * (1-prop))/visits);
+    	return 100*stddev/visits;
     }
 
     /**
      * @return 95% confidence interval of win percentage (+- 2 * standard deviation)
      */
-    public double confInt95() {
-    	return 2*stdDev();
+    public double getcConfInt95() {
+    	return 2*getStdDev();
     }
     
     public void addChild(MonteCarloTreeNode child) {
@@ -100,30 +114,35 @@ public abstract class MonteCarloTreeNode implements GamePosition {
      * 
      * @param visited list of nodes visited from root to this node
      * @param debug switch
-     * @return node to expand, or null if at least one child a win or all children are draws
+     * @return node to expand, or null if at least one child a win or all children draws
      */
-    public MonteCarloTreeNode select(List<MonteCarloTreeNode> visited, boolean debug) {
+    public MonteCarloTreeNode select(List<MonteCarloTreeNode> visited, boolean debug) throws MCTSSelectException {
         MonteCarloTreeNode selected = null;
         double bestValue = Double.MIN_VALUE;
         for (MonteCarloTreeNode c : children) {
         	if (c.isWin()) {
         		visited.add(c);
         		updateStats(visited, c.scoreWin(), debug);
+        		if (this == visited.get(0))
+        			throw new MCTSSelectException("Win from root position");
         		return null;
         	}
-        	if (c.isDraw()) continue;
+        	if (c.isDraw()) {
+        		visited.add(c);
+        		updateStats(visited, c.scoreDraw(), debug);
+        		continue;
+        	}
             double uctValue =
-                    c.totValue / (c.nVisits + EPSILON) +
-                            C * Math.sqrt(Math.log(nVisits+1) / (c.nVisits + EPSILON)) +
+                    c.score / (c.visits + EPSILON) +
+                            C * Math.sqrt(Math.log(visits+1) / (c.visits + EPSILON)) +
                             randNum.nextDouble() * EPSILON;
-            // small random number to break ties randomly in unexpanded nodes
-            // System.out.println("UCT value = " + uctValue);
             if (uctValue > bestValue) {
                 selected = c;
                 bestValue = uctValue;
             }
         }
-        // System.out.println("Returning: " + selected);
+        if (selected == null && this == visited.get(0))
+        	throw new MCTSSelectException("Draw from root position");
         return selected;
     }
 
@@ -164,65 +183,141 @@ public abstract class MonteCarloTreeNode implements GamePosition {
 		}
 	}
 	
+    /**
+     * References:
+     * [1] http://ccg.doc.gold.ac.uk/teaching/ludic_computing/ludic16.pdf
+     * [2] https://jeffbradberry.com/posts/2015/09/intro-to-monte-carlo-tree-search/
+     * 
+     * [1] Score for node includes both wins and losses; all nodes updated.
+     * [2] Score for node includes only wins; winning player nodes updated.
+     * 
+     * @param visited List of nodes visited during selection and expansion
+     * @param score from playout: -1 = root player loss, 0 = draw, +1 = root player win
+     * @param debug true = on, false = off
+     */
     static public void updateStats(List<MonteCarloTreeNode> visited, int score, boolean debug) {
         for (MonteCarloTreeNode node : visited) {
         	assert node != null : "Null node visited";
         	assert node.getMove() != null || node.getPly() == rootPly : "Null move";
+        	assert score >= -1 && score <= 1 :
+        		String.format("Score %d out of range at ply %d", score, node.getPly());
 
-        	node.nVisits++;
-	        int nodeScore = score * node.scoreSign();		// win/loss * winner/loser at this node
-	        if (nodeScore > 0) node.totValue += nodeScore;	// Increase value if win for player at this ply
+        	node.visits++;
+	        int nodeScore = score * node.scoreSign();	// win/loss * winner/loser at this node
+	        node.score += nodeScore;		// See reference [1] above
+//	        if (nodeScore > 0) {			// See reference [2] above
+//		        node.score += nodeScore;
+//		    }
+	        assert node.score <= node.visits :
+	        	String.format("Score (%d) > visits (%d) at ply %d",
+	        		node.score, node.visits, node.getPly());
 	        if (debug) {
 	        	if (node.getPly() == rootPly)
 		        	System.out.printf("Updating stats for root at ply %d: visits=%d, score=%d, nodeScore=%d, total=%d%n",
-			        		node.getPly(), node.nVisits, score, nodeScore, node.totValue);
+			        		node.getPly(), node.visits, score, nodeScore, node.score);
 	        	else
 	        		System.out.printf("Updating stats for move %s at ply %d: visits=%d, score=%d, nodeScore=%d, total=%d%n",
-	        				node.getMove().toString(), node.getPly(), node.nVisits, score, nodeScore, node.totValue);
+	        				node.getMove().toString(), node.getPly(), node.visits, score, nodeScore, node.score);
 	        }
         }
     }
 
-	public Variation getPrincipalVariation() {
-		Variation pvar = newVariation();
-        MonteCarloTreeNode parent = this;
-        while (!parent.isLeaf()) {
-//        	System.out.printf("Finding best move at ply %d ...%n", parent.getPly());
-        	MonteCarloTreeNode bestChild = null;
-	        float bestAvg = Float.NEGATIVE_INFINITY;
-	        for (MonteCarloTreeNode child : parent.children) {
-		        assert child.move != null : "Null move at ply %d";
-//	        	System.out.printf("    %s total/visits: %d/%d",
-//	        			child.getMove().toString(), child.totValue, child.nVisits);
-	        	if (child.nVisits == 0) {
-//	        		System.out.println("");
-	        		continue;	        	
-	        	}
-	            float avgValue =((float) child.totValue)/child.nVisits;
-//	            System.out.printf(" (%%%.0f)%n", avgValue*100);
-	            if (avgValue > bestAvg) {
-	                bestChild = child;
-	                bestAvg = avgValue;
-	            }
-	        }	        
-
-	        if (bestChild == null) {
-	        	assert pvar.size() > 0 : "getPrincipalVariation failed";
-	        	return pvar;
-	        }
-
-//	        System.out.printf("... Best move at ply %d is %s (%%%.0f)%n",
-//	        		parent.getPly(), bestChild.getMove().toString(), bestAvg*100);
-	        
-	        if (pvar.size() == 0) pvar.setScore((int) Math.round(bestAvg*100));
-    	    pvar.add(bestChild.move);
-	        parent = bestChild;
-	        assert (pvar.size() <= 6*7) : "Variation size exceeded";
-        }
-		return pvar;
-	}
+		/**
+		 * References:
+		 * [1] http://ccg.doc.gold.ac.uk/teaching/ludic_computing/ludic16.pdf
+		 * [2] https://jeffbradberry.com/posts/2015/09/intro-to-monte-carlo-tree-search/
+		 * [3] https://github.com/theKGS/MCTS
+		 * 
+		 * [1] Best move = highest UCT--but why include regret term?
+		 * [2] Best move = highest win percent
+		 * [3] Best move = most visited
+		 * 
+		 * @return principal Variation (moves w/ highest win percent as per [2])
+		 */
+		public Variation getPrincipalVariation() {
+			Variation pvar = newVariation();
+	        MonteCarloTreeNode parent = this;
+	        while (!parent.isLeaf()) {
+	        	System.out.printf("Finding best move at ply %d ...%n", parent.getPly());
+	        	MonteCarloTreeNode bestChild = null;
+		        float bestAvg = Float.NEGATIVE_INFINITY;
+		        for (MonteCarloTreeNode child : parent.children) {
+			        assert child.move != null : "Null move at ply %d";
+		        	System.out.printf("    %s total/visits: %d/%d",
+		        			child.getMove().toString(), child.score, child.visits);
+		        	if (child.visits == 0) {
+		        		System.out.println("");
+		        		continue;	        	
+		        	}
+		            float avgValue =((float) child.score)/child.visits;
+		            System.out.printf(" (%%%.0f)%n", avgValue*100);
+		            if (avgValue > bestAvg) {
+		                bestChild = child;
+		                bestAvg = avgValue;
+		            }
+		        }	        
 	
-    /* (non-Javadoc)
+		        if (bestChild == null) {
+		        	assert pvar.size() > 0 : "getPrincipalVariation failed";
+		        	return pvar;
+		        }
+	
+		        System.out.printf("... Best move at ply %d is %s (%%%.0f)%n",
+		        		parent.getPly(), bestChild.getMove().toString(), bestAvg*100);
+		        
+		        if (pvar.size() == 0) pvar.setScore((int) Math.round(bestAvg*100));
+	    	    pvar.add(bestChild.move);
+		        parent = bestChild;
+		        assert (pvar.size() <= 6*7) : "Variation size exceeded";
+	        }
+			return pvar;
+		}
+	
+		/**
+		 * The principal variation is the sequence of moves to the
+		 * most-played positions at each ply (UCT selects the positions
+		 * with the most wins to play most often).
+		 * 
+		 * @return Principal Variation from this node based on most visits
+		 */
+//		public Variation getPrincipalVariation() {
+//			Variation pvar = newVariation();
+//	        MonteCarloTreeNode parent = this;
+//	        while (!parent.isLeaf()) {
+//	        	System.out.printf("Finding best move at ply %d ...%n", parent.getPly());
+//	        	MonteCarloTreeNode bestChild = null;
+//		        int mostPlays = -1;
+//		        for (MonteCarloTreeNode child : parent.children) {
+//			        assert child.move != null : "Null move at ply %d";
+//
+//		        	System.out.printf("    %s total/visits: %d/%d",
+//		        			child.getMove().toString(), child.totValue, child.nVisits);
+//		        	if (child.nVisits > 0) {
+//			            System.out.printf(" (%%%.0f)", 100.0*child.totValue/child.nVisits);
+//		        	}
+//	        		System.out.println("");
+//		        	
+//		            if (child.visits > mostPlays) {
+//		                bestChild = child;
+//		                mostPlays = child.visits;
+//		            }
+//		        }	        
+//		        assert bestChild != null : "getPrincipalVariation() failed";
+//		        System.out.printf("... Best move at ply %d is %s (%d)%n",
+//		        		parent.getPly(), bestChild.getMove().toString(), mostPlays);
+//		        assert pvar.size() > 0 || mostPlays > 0 : "";
+//		        
+//		        if (pvar.size() == 0) pvar.setScore(mostPlays);
+//		        if (mostPlays == 0) return pvar;	// All children at this ply unexpanded
+//		        
+//	    	    pvar.add(bestChild.move);
+//		        parent = bestChild;
+//		        assert (pvar.size() <= MAX_DEPTH) : "Variation size exceeded";
+//	        }
+//			return pvar;
+//		}
+
+		/* (non-Javadoc)
 	 * @see kgorlen.games.Position#newTTentry(int, int, kgorlen.games.Move)
 	 */
 	@Override

@@ -37,7 +37,7 @@ public class DepthFirst extends TreeSearch {
 			return score;
 		}
 		
-		score = parent.evaluate();
+		score = parent.evaluate(debug);
 
 		MoveGenerator gen = parent.moveGenerator(debug);		
 		if (depth == 0 || !gen.hasNext()) {

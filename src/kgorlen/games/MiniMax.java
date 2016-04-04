@@ -55,7 +55,7 @@ public class MiniMax extends TreeSearch {
 		}
 			
 		if (depth == 0) {
-			score = parent.evaluate();
+			score = parent.evaluate(debug);
 			if (debug) System.out.format("%s} MiniMax.search(%s) returning evaluation score=%d%n",
 					indent, parent.sideToMove(), score);
 			return score;

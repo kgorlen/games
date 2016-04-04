@@ -43,10 +43,11 @@ public interface Position {
 
 	/**
 	 * Evaluate a quiescent position.
+	 * @param debug TODO
 	 * 
 	 * @return	throws unchecked RuntimeException
 	 */
-	public int evaluate();
+	public int evaluate(boolean debug);
 
 	/**
 	 * Create a MoveGenerator for this Position
@@ -67,6 +68,14 @@ public interface Position {
 	 */
 	public Variation newVariation();
 
+	/**
+	 * Format row of Position as String
+	 * 
+	 * @param row to format
+	 * @return specified row of game position
+	 */
+	public String rowToString(int row);
+	
 	/**
 	 * Print board position with indentation.  Useful for formatting tree
 	 * search debug printout to indicate depth.

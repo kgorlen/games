@@ -17,6 +17,24 @@ public class TicTacToeMoveGenerator implements MoveGenerator {
 		THREATEN_ROW,  THREATEN_COL, CENTER, CORNERS, SIDES
 	};
 	
+// Move type statistics
+	private static long[] MoveCount = new long[State.values().length];
+	
+	public static void resetStatistics() {
+		for (State i : State.values()) {
+			MoveCount[i.ordinal()] = 0;
+		}
+	}
+
+	public static void printStatistics() {
+		System.out.print("Move types:");
+		for (State i : State.values()) {
+			if (i == State.INITIAL) continue;
+			System.out.format(" %s=%d", i, MoveCount[i.ordinal()]);
+		}
+		System.out.println();
+	}
+	
 	private boolean debug;
 	private State currentState;
 	private TicTacToePosition currentPosition;	// current GamePosition
@@ -33,18 +51,6 @@ public class TicTacToeMoveGenerator implements MoveGenerator {
 	 * better moves first, which narrows the search by increasing
 	 * the chances of alpha/beta cutoffs.
 	 * 
-	 * Corners, Center, Sides:
-	 * 	232427 positions searched, 32000 alpha cutoffs, 36552 beta cutoffs, 2.87 positions/us
-	 * 
-	 * Center, Corners, Sides:
-	 * 	210911 positions searched, 24755 alpha cutoffs, 42894 beta cutoffs, 2.49 positions/us
-	 * 
-	 * Threats, Corners, Center, Sides:
-	 * 	186533 positions searched, 25736 alpha cutoffs, 30552 beta cutoffs, 2.16 positions/us
-	 * 
-	 * Threats, Center, Corners, Sides:
-	 * 	172258 positions searched, 20550 alpha cutoffs, 36548 beta cutoffs, 2.32 positions/us
-	 * 
 	 * @param p	starting/current GamePosition
 	 */
 	public TicTacToeMoveGenerator(TicTacToePosition p, Move[] killers, boolean debug) {
@@ -58,7 +64,7 @@ public class TicTacToeMoveGenerator implements MoveGenerator {
 	}
 	
 	public TicTacToeMoveGenerator(TicTacToePosition p) {
-		this(p, null, false);
+		this(p, new Move[0], false);
 	}
 	
 	/**
@@ -99,6 +105,7 @@ public class TicTacToeMoveGenerator implements MoveGenerator {
 								currentPosition.sideToMove(), m);
 						currentPosition.print();
 					}
+					MoveCount[currentState.ordinal()]++;
 					break;
 				}
 			case THREATEN_159:						// Threaten or win 1-5-9 diagonal
@@ -106,13 +113,19 @@ public class TicTacToeMoveGenerator implements MoveGenerator {
 				m = empty & 0x421;
 				if (m != 0							// at least one empty square
 					&& (mysq & 0x421) != 0			// at least one occupied by me
-					&& (opsq & 0x421) == 0) break;	// not blocked by opponent
+					&& (opsq & 0x421) == 0) {		// not blocked by opponent
+					MoveCount[currentState.ordinal()]++;
+					break;						
+				}
 			case THREATEN_357:						// Threaten or win 3-5-7 diagonal
 				currentState = State.THREATEN_357;
 				m = empty & 0x124;
 				if (m != 0							// at least one empty square
 					&& (mysq & 0x124) != 0			// at least one occupied by me
-					&& (opsq & 0x124) == 0) break;	// not blocked by opponent
+					&& (opsq & 0x124) == 0) {		// not blocked by opponent
+					MoveCount[currentState.ordinal()]++;
+					break;
+				}
 			case THREATEN_ROW:						// Threaten or win three in a row
 				currentState = State.THREATEN_ROW;
 				m = empty;
@@ -126,6 +139,7 @@ public class TicTacToeMoveGenerator implements MoveGenerator {
 								currentPosition.sideToMove(), m);
 						currentPosition.print();
 					}
+					MoveCount[currentState.ordinal()]++;
 					break;
 				}
 			case THREATEN_COL:						// Threaten or win three in a column
@@ -141,20 +155,30 @@ public class TicTacToeMoveGenerator implements MoveGenerator {
 								currentPosition.sideToMove(), m);
 						currentPosition.print();
 					}
+					MoveCount[currentState.ordinal()]++;
 					break;
 				}
 			case CORNERS:				// Corners
 				currentState = State.CORNERS;
 				m = empty & 0x505;
-				if (m != 0) break;
+				if (m != 0) {
+					MoveCount[currentState.ordinal()]++;
+					break;
+				}
 			case CENTER:				// Center
 				currentState = State.CENTER;
 				m = empty & 0x020;
-				if (m != 0) break;
+				if (m != 0) {
+					MoveCount[currentState.ordinal()]++;
+					break;
+				}
 			case SIDES:					// Sides
 				currentState = State.SIDES;
 				m = empty & 0x252;
-				if (m != 0) break;
+				if (m != 0) {
+					MoveCount[currentState.ordinal()]++;
+					break;
+				}
 			default:					// All moves generated
 				return null;
 		}

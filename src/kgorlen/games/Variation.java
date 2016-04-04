@@ -42,9 +42,20 @@ public class Variation extends ArrayList<Move> {
 		super.clear();
 	}
 
+	public String lineToString(Position start, int row) {
+		StringBuilder line = new StringBuilder();
+		line.append(start.rowToString(row) + " ");
+		Position p = start.copy();		
+		for (int j=0; j<size(); j++) {
+			p.makeMove(getMove(j));
+			line.append(p.rowToString(row) + " ");
+		}
+		return line.toString();
+	}
+	
 	public void print(Position start, String indent) {
 		for (Move move : this) {
-			System.out.println(indent + move.toString());			
+			System.out.println(indent + move.toString() + "");			
 		}
 		System.out.format("%sscore=%d%n", indent, score);
 	}

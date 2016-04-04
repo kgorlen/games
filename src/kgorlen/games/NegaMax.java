@@ -56,7 +56,7 @@ public class NegaMax extends TreeSearch {
 		}
 			
 		if (depth == 0) {
-			score = color * parent.evaluate();
+			score = color * parent.evaluate(debug);
 			if (debug) System.out.format("%s} negaMax.search(%s) returning evaluation score=%d%n",
 					indent, parent.sideToMove(), score);
 			return score;

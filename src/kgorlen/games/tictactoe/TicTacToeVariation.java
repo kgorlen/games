@@ -16,20 +16,10 @@ class TicTacToeVariation extends Variation {
 	 * @see kgorlen.games.Variation#print(kgorlen.games.GamePosition, java.lang.String)
 	 */
 	public void print(Position start, String indent) {
-		System.out.print(indent);
-		System.out.println("Variation score: " + Integer.toString(getScore())
+		System.out.println(indent + "Variation score: " + Integer.toString(getScore())
 								+ " move #" + Integer.toString(start.getPly()));
-		int i;
-		for (i=0; i<3; i++) {
-			StringBuilder line = new StringBuilder();
-			line.append(((TicTacToePosition) start).rowToString(i) + " ");
-			TicTacToePosition p = new TicTacToePosition((TicTacToePosition) start);		
-			for (int j=0; j<size(); j++) {
-				((TicTacToePosition) p).makeMove(getMove(j));
-				line.append(p.rowToString(i) + " ");
-			}
-			System.out.print(indent);
-			System.out.println(line.toString());
+		for (int i=0; i<3; i++) {
+			System.out.println(indent + lineToString(start, i));
 		}
 	}
 
