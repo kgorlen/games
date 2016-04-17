@@ -13,25 +13,44 @@ import kgorlen.games.connect4.Connect4Position;
 public class Connect4Variation extends Variation {
 	private static final long serialVersionUID = 3865530167190401014L;
 
+	public Connect4Variation(Connect4Position start) {
+		super(start);
+	}
+	
+	public Connect4Variation(Connect4Position start, int score) {
+		super(start, score);
+	}
+	
 	/* (non-Javadoc)
 	 * @see kgorlen.games.Variation#print(kgorlen.games.GamePosition, java.lang.String)
 	 */
-	public void print(Position start, String indent) {
-		System.out.print(indent);
-		System.out.println("Variation score: " + Integer.toString(getScore())
-								+ " move #" + Integer.toString(start.getPly()));
-		int i;
-		for (i=0; i<3; i++) {
-			StringBuilder line = new StringBuilder();
-			line.append(((Connect4Position) start).rowToString(i) + " ");
+	@Override
+	public String toString(String indent) {
+		Position start = getStart();
+		StringBuilder s = new StringBuilder();
+		s.append(String.format("%sVariation score: %d move #%d%n",
+				indent, getScore(), start.getPly()+1 ));
+		for (int i=1; i<=Connect4Position.ROWS; i++) {
+			s.append(indent + i + ((Connect4Position) start).rowToString(i));
 			Connect4Position p = new Connect4Position((Connect4Position) start);		
 			for (int j=0; j<size(); j++) {
 				((Connect4Position) p).makeMove(getMove(j));
-				line.append(p.rowToString(i) + " ");
+				s.append("  " + p.rowToString(i));
 			}
-			System.out.print(indent);
-			System.out.println(line.toString());
+			s.append("\n");
 		}
+		s.append(indent + "  A B C D E F G");
+		for (int j=0; j<size(); j++) s.append("    A B C D E F G");
+		s.append("\n");
+		return s.toString();
 	}
 
+	public void print(String indent) {
+		System.out.print(toString(indent));
+	}
+	
+	public void print() {
+		System.out.print(toString());
+	}
+	
 }

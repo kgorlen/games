@@ -3,7 +3,6 @@ package kgorlen.games.potion;
 import kgorlen.games.MoveGenerator;
 
 public class PotionGenerator implements MoveGenerator {
-	private boolean debug;
 	private PotionStock currentStock;
 	private int lastReaction;
 	
@@ -32,12 +31,12 @@ public class PotionGenerator implements MoveGenerator {
 				),
 	};
 	
-	public PotionGenerator(PotionStock p, boolean debug) {
-		this.debug = debug;
+	public PotionGenerator(PotionStock p) {
 		currentStock = p;
 		lastReaction = 0;
 	}
 
+	@Override
 	public boolean hasNext() {
 		while (lastReaction < reaction.length) {
 			Reaction r = reaction[lastReaction];
@@ -47,6 +46,7 @@ public class PotionGenerator implements MoveGenerator {
 		return false;
 	}
 
+	@Override
 	public Reaction next() {
 		while (lastReaction < reaction.length) {
 			Reaction r = reaction[lastReaction++];

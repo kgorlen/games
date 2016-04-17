@@ -75,31 +75,21 @@ public class PotionStock implements Position {
 	 * @see kgorlen.games.Position#evaluate()
 	 */
 	@Override
-	public int evaluate(boolean debug) {
+	public int evaluate() {
 		return amount[Ingredient.POTION.ordinal()];
-//		return 1000*amount[Ingredient.POTION.ordinal()] 
-//				- numReactions;	// penalize if more reactions
 	}
 
 	@Override
-	public MoveGenerator moveGenerator(Move[] killers, boolean debug) {
-		return new PotionGenerator(this, debug);
+	public MoveGenerator moveGenerator(Move[] killers) {
+		return new PotionGenerator(this);
 	}
 
 	/* (non-Javadoc)
 	 * @see kgorlen.games.Position#moveGenerator(boolean)
 	 */
 	@Override
-	public PotionGenerator moveGenerator(boolean debug) {
-		return new PotionGenerator(this, debug);
-	}
-
-	/* (non-Javadoc)
-	 * @see kgorlen.games.Position#moveGenerator()
-	 */
-	@Override
 	public PotionGenerator moveGenerator() {
-		return new PotionGenerator(this, false);
+		return new PotionGenerator(this);
 	}
 
 	/* (non-Javadoc)
@@ -107,7 +97,15 @@ public class PotionStock implements Position {
 	 */
 	@Override
 	public Variation newVariation() {
-		return new Variation();
+		return new Variation(this);
+	}
+
+	/* (non-Javadoc)
+	 * @see kgorlen.games.Position#newVariation(int)
+	 */
+	@Override
+	public Variation newVariation(int amount) {
+		return new Variation(this, amount);
 	}
 
 	/* (non-Javadoc)
@@ -120,19 +118,37 @@ public class PotionStock implements Position {
 	}	
 	
 	/* (non-Javadoc)
-	 * @see kgorlen.games.Position#print(java.lang.String)
+	 * @see kgorlen.games.Position#toString(java.lang.String)
 	 */
 	@Override
-	public void print(String indent) {
-		for (Ingredient i: Ingredient.values) {
-			System.out.format("%s%s = %d%n", indent, i, amount[i.ordinal()]);
+	public String toString(String indent) {
+		StringBuilder s = new StringBuilder();
+		for (int i = 0; i < Ingredient.values.length; i++) {
+			s.append(indent + rowToString(i) + "\n");
 		}
+		return s.toString();
 	}
 
 	/* (non-Javadoc)
-	 * @see kgorlen.games.Position#print()
+	 * @see java.lang.Object#toString()
 	 */
 	@Override
+	public String toString() {
+		return toString("");
+	}
+	
+	/**
+	 * Print to System.out with indentation
+	 * 
+	 * @param indent String to prepend to each line
+	 */
+	public void print(String indent) {
+		System.out.print(toString(indent));
+	}
+
+	/**
+	 * Print to System.out
+	 */
 	public void print() {
 		print("");
 	}

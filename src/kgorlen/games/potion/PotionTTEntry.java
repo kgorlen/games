@@ -12,10 +12,6 @@ import kgorlen.games.TTEntry;
  *
  */
 public class PotionTTEntry implements TTEntry {
-
-	/**
-	 * 
-	 */
 	private int score;
 	private int depth;
 	private Reaction reaction;
@@ -51,4 +47,9 @@ public class PotionTTEntry implements TTEntry {
 		return true;
 	}
 
+	@Override
+	public String toString() {
+		return String.format("depth=%d, score=%d, move: %s",
+				depth, score, getMove().toString());
+	}
 }

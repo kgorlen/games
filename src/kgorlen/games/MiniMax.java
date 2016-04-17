@@ -1,13 +1,12 @@
 package kgorlen.games;
 
+import java.util.logging.Logger;
+
 import kgorlen.games.MoveGenerator;
-import kgorlen.games.Variation;
 
 public class MiniMax extends TreeSearch {
-	
-	public MiniMax(boolean debug) {
-		this.debug =debug;
-	}
+	private final static Logger LOGGER = Log.LOGGER;
+	private static final String CLASS_NAME = MiniMax.class.getName();
 	
 	/**
 	 * Performs a full minimax search of a GamePosition
@@ -23,45 +22,45 @@ public class MiniMax extends TreeSearch {
 	 */
 	public int search(GamePosition parent, int depth, boolean maximize, String indent) {
 	
-		int score;				// score for *parent* GamePosition
-		
-		if (debug) {
-			System.out.format("%s{ MiniMax.search(%s) maximize=%b, position:%n",
-					indent, parent.sideToMove(), maximize);
-			parent.print(indent);
-		}
+		LOGGER.fine(() -> String.format(
+				"%s{ %s.search(%s) maximize=%b, position:%n%s",
+					indent, CLASS_NAME, parent.sideToMove(), maximize, parent.toString(indent) ));
 
 		TTEntry ttEntry = getTTEntry(parent);
 		if (ttEntry != null) {
-			score = ttEntry.getScore();
+			final int ttScore = ttEntry.getScore();
 			ttHits++;
-			if (debug) System.out.format("%s} MiniMax.search(%s) returning transposition score=%d%n",
-					indent, parent.sideToMove(), score);
-			return score;
+			LOGGER.fine(() -> String.format(
+					"%s} %s.search(%s) returning transposition score=%d%n",
+					indent, CLASS_NAME, parent.sideToMove(), ttScore ));
+			return ttScore;
 		}
 		
 		if (parent.isWin()) {
-			score = parent.scoreWin();
-			if (debug) System.out.format("%s} MiniMax.search(%s) returning win score=%d%n",
-					indent, parent.sideToMove(), score);
-			return score;
+			final int winScore = parent.scoreWin();
+			LOGGER.fine(() -> String.format(
+					"%s} %s.search(%s) returning win score=%d%n",
+					indent, CLASS_NAME, parent.sideToMove(), winScore ));
+			return winScore;
 		}
 		
 		if (parent.isDraw()) {
-			score = parent.scoreDraw();
-			if (debug) System.out.format("%s} MiniMax.search(%s) returning draw score=%d%n",
-					indent, parent.sideToMove(), score);
-			return score;
+			final int drawScore = parent.scoreDraw();
+			LOGGER.fine(() -> String.format(
+					"%s} %s.search(%s) returning draw score=%d%n",
+					indent, CLASS_NAME, parent.sideToMove(), drawScore ));
+			return drawScore;
 		}
 			
 		if (depth == 0) {
-			score = parent.evaluate(debug);
-			if (debug) System.out.format("%s} MiniMax.search(%s) returning evaluation score=%d%n",
-					indent, parent.sideToMove(), score);
-			return score;
+			final int evalScore = parent.evaluate();
+			LOGGER.fine(() -> String.format(
+					"%s} %s.search(%s) returning evaluation score=%d%n",
+					indent, CLASS_NAME, parent.sideToMove(), evalScore ));
+			return evalScore;
 		}
 		
-		MoveGenerator gen = parent.moveGenerator(debug);		
+		MoveGenerator gen = parent.moveGenerator();		
 		int bestScore;		// "best" = highest if maximizing, lowest if minimizing
 		Move bestMove = null;
 
@@ -72,16 +71,14 @@ public class MiniMax extends TreeSearch {
 				Move move = gen.next();
 				GamePosition child = parent.copy();
 				child.makeMove(move);
-				score = search(child, depth-1, false, indent + "    ");
+				int score = search(child, depth-1, false, indent + "    ");
 				if (score > bestScore) {
 					bestScore = score;
 					bestMove = move;
 					ttEntry = parent.newTTentry(depth, ScoreType.EXACT, bestScore, bestMove);
 					putTTEntry(parent, ttEntry);
-					if (debug) {
-						Variation pvar = getPrincipalVariation(parent);
-						pvar.print(parent, indent);
-					}
+					LOGGER.fine(() -> String.format("%sPrincipal variation:%n%s",
+							indent, this.getPrincipalVariation(parent).toString(indent) ));
 				}
 			}
 		} else {	// minimize
@@ -91,35 +88,39 @@ public class MiniMax extends TreeSearch {
 				Move move = gen.next();
 				GamePosition child = parent.copy();
 				child.makeMove(move);
-				score = search(child, depth-1, true, indent + "    ");
+				int score = search(child, depth-1, true, indent + "    ");
 				if (score < bestScore) {
 					bestScore = score;
 					bestMove = move;
 					ttEntry = parent.newTTentry(depth, ScoreType.EXACT, bestScore, bestMove);
 					putTTEntry(parent, ttEntry);
-					if (debug) {
-						Variation pvar = getPrincipalVariation(parent);
-						pvar.print(parent, indent);
-					}
+					LOGGER.fine(() -> String.format("%sPrincipal variation:%n%s",
+							indent, this.getPrincipalVariation(parent).toString(indent) ));
 				}
 			}
 		}
 		
-		if (debug) System.out.format("%s} MiniMax.search(%s) returning search score=%d%n",
-				indent, parent.sideToMove(), bestScore);
+		final int logScore = bestScore;
+		LOGGER.fine(() -> String.format(
+				"%s} %s.search(%s) returning search score=%d%n",
+				indent, CLASS_NAME, parent.sideToMove(), logScore ));
 		return bestScore;
 	}
 
 	/**
 	 * @param root		root GamePosition to be searched
 	 * @param maxDepth	maximum depth to search
-	 * @return			MiniMax search results
+	 * @return			principal Variation found by search (may be null)
 	 */
-	public MiniMax search(Position root, int maxDepth) {
+	@Override
+	public Variation search(Position root, int maxDepth) {
 		setRoot(root);
 		elapsedTime();
 		search((GamePosition) root, maxDepth, root.scoreSign() > 0, "");
 		elapsedTime();
-		return this;		
+		logStatistics(CLASS_NAME);
+		Variation pvar = getPrincipalVariation();
+		Variation.logPrincipalVariation(pvar, CLASS_NAME);
+		return pvar;
 	}
 }

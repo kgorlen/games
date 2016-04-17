@@ -9,7 +9,7 @@ import kgorlen.games.Move;
  * Instances of Moves are created by MoveGenerators, applied to
  * Positions, and stored in Variations.
  * 
- * @author Keith
+ * @author Keith gorlen@comcast.net
  *
  */
 public class TicTacToeMove implements Move {
@@ -63,6 +63,34 @@ public class TicTacToeMove implements Move {
 	public String toString() {
 		int m = (move & 0x7) | (move & 0x7<<4) >>1 | (move & 0x7<<8) >>2;
 		return Integer.toString(9-Integer.numberOfTrailingZeros(m));
+	}
+
+	/* (non-Javadoc)
+	 * @see java.lang.Object#hashCode()
+	 */
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + move;
+		return result;
+	}
+
+	/* (non-Javadoc)
+	 * @see java.lang.Object#equals(java.lang.Object)
+	 */
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		TicTacToeMove other = (TicTacToeMove) obj;
+		if (move != other.move)
+			return false;
+		return true;
 	}
 
 }

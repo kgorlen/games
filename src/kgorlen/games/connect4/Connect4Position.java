@@ -1,12 +1,14 @@
 package kgorlen.games.connect4;
 
+import java.util.logging.Logger;
+
 import kgorlen.games.GamePosition;
-import kgorlen.games.MonteCarloTreeNode;
+import kgorlen.games.Log;
 import kgorlen.games.Move;
 import kgorlen.games.MoveGenerator;
-import kgorlen.games.ScoreType;
 import kgorlen.games.TTEntry;
 import kgorlen.games.Variation;
+import kgorlen.games.mcts.MonteCarloTreeNode;
 
 /**
  * Represents a Connect Four GamePosition using a 2-element array of
@@ -42,6 +44,8 @@ import kgorlen.games.Variation;
 public class Connect4Position extends MonteCarloTreeNode {
 	public static final int ROWS = 6;	// max 7
 	public static final int COLS = 7;	// max 8
+
+	private static final Logger LOGGER = Log.LOGGER;
     private static final long colMask =       0x3f3f3f3f3f3f3fL; 	// Mask for column bits
     private static final long bottomRowMask = 0x01010101010101L;	// Mask for bits in first row
 
@@ -111,30 +115,48 @@ public class Connect4Position extends MonteCarloTreeNode {
 	 * @return		seven-character string
 	 */
 	public String rowToString(int row) {
-		String s = "|";
+		StringBuilder s = new StringBuilder("|");
 	    for (long m = 1L<<((COLS-1)*8+(ROWS-row)); m > 0; m >>= 8) {
-			if ((board[0] & m) != 0) s += "X|";
-			else if ((board[1] & m) != 0) s += "O|";
-			else s += " |";
+			if ((board[0] & m) != 0) s.append("X|");
+			else if ((board[1] & m) != 0) s.append("O|");
+			else s.append(" |");
 		}
-		return s;
+		return s.toString();
 	}
 
 	/* (non-Javadoc)
      * @see kgorlen.games.MonteCarloTreeNode#print()
      */
     @Override
-    public void print(String indent) {	// Print board
+    public String toString(String indent) {
+    	StringBuilder s = new StringBuilder();
 		for (int i=1; i<=ROWS; i++) {
-		    System.out.println(indent + i + rowToString(i));
+		    s.append(indent + i + rowToString(i) + "\n");
 	    }
-		System.out.println(indent + "  A B C D E F G ");
+		s.append(indent + "  A B C D E F G\n");
+		return s.toString();
 	}
 
 	/* (non-Javadoc)
 	 * @see kgorlen.games.MonteCarloTreeNode#print()
 	 */
 	@Override
+	public String toString() {
+		return toString("");
+	}
+
+	/**
+	 * Print to System.out with indentation
+	 * 
+	 * @param indent String to prepend to each line
+	 */
+	public void print(String indent) {
+		System.out.print(toString(indent));
+	}
+
+	/**
+	 * Print to System.out
+	 */
 	public void print() {
 		print("");
 	}
@@ -191,9 +213,8 @@ public class Connect4Position extends MonteCarloTreeNode {
 		    if (m == 0) continue;
 		    m &= m << dirShift[direction];
 		    if (m != 0) {
-//		    	System.out.printf("Win for %s at ply %d:%n",
-//		    			((ply & 1) != 0) ? "X" : "O", getPly());
-//		    	print();
+		    	LOGGER.finest(() -> String.format("Win for %s at ply %d%n",
+		    			((ply & 1) != 0) ? "X" : "O", getPly() ));
 		    	return true;
 		    }
 		}
@@ -202,7 +223,7 @@ public class Connect4Position extends MonteCarloTreeNode {
 
 	@Override
 	public TTEntry newTTentry(int depth, int score, Move bestMove) {
-		return new Connect4TTEntry(depth, ScoreType.EXACT, score, (Connect4Move) bestMove);
+		return new Connect4TTEntry(depth, score, (Connect4Move) bestMove);
 	}
 
 	@Override
@@ -216,13 +237,18 @@ public class Connect4Position extends MonteCarloTreeNode {
 	}
 
 	@Override
-	public MoveGenerator moveGenerator(boolean debug) {
-		return new Connect4MoveGenerator(this, debug);
+	public MoveGenerator moveGenerator() {
+		return new Connect4MoveGenerator(this);
 	}
 
 	@Override
 	public Variation newVariation() {
-		return new Connect4Variation();
+		return new Connect4Variation(this);
+	}
+
+	@Override
+	public Variation newVariation(int score) {
+		return new Connect4Variation(this, score);
 	}
 
 	/* (non-Javadoc)
@@ -233,11 +259,6 @@ public class Connect4Position extends MonteCarloTreeNode {
 	public int scoreSign() {
 		assert AISide != 0 : "setAISide() not called";
 		return AISide * (1 - (~ply<<1 & 2));
-	}
-
-	@Override
-	public TTEntry newTTentry(int depth, ScoreType scoreType, int score, Move bestMove) {
-		return new Connect4TTEntry(depth, scoreType, score, (Connect4Move) bestMove);
 	}
 
 	@Override

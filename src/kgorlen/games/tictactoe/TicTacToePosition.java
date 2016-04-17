@@ -215,25 +215,29 @@ public class TicTacToePosition implements GamePosition {
 	 * 
 	 * @return	throws unchecked RuntimeException
 	 */
-	public int evaluate(boolean debug) {		// Evaluate a quiescent position
+	@Override
+	public int evaluate() {		// Evaluate a quiescent position
 		throw new RuntimeException("Not implemented");
 	}
 	
 	@Override
-	public MoveGenerator moveGenerator(Move[] killers, boolean debug) {
-		return new TicTacToeMoveGenerator(this, killers, debug);
+	public MoveGenerator moveGenerator(Move[] killers) {
+		return new TicTacToeMoveGenerator(this, killers);
 	}
 
-	public TicTacToeMoveGenerator moveGenerator(boolean debug) {
-		return new TicTacToeMoveGenerator(this, new Move[0], debug);
-	}
-
+	@Override
 	public TicTacToeMoveGenerator moveGenerator() {
-		return new TicTacToeMoveGenerator(this, new Move[0], false);
+		return new TicTacToeMoveGenerator(this, new Move[0]);
 	}
 	
+	@Override
 	public TicTacToeVariation newVariation() {
-		return new TicTacToeVariation();
+		return new TicTacToeVariation(this);
+	}
+	
+	@Override
+	public TicTacToeVariation newVariation(int score) {
+		return new TicTacToeVariation(this, score);
 	}
 	
 	/**
@@ -260,26 +264,41 @@ public class TicTacToePosition implements GamePosition {
 		return s;
 	}
 	
+	/* (non-Javadoc)
+	 * @see kgorlen.games.Position#toString(java.lang.String)
+	 */
+	@Override
+	public String toString(String indent) {
+		StringBuilder s = new StringBuilder();
+		for (int i = 0; i < 3; i++) {
+			s.append(indent + rowToString(i) + "\n");
+		}
+		return s.toString();
+	}
+	
+	/* (non-Javadoc)
+	 * @see java.lang.Object#toString()
+	 */
+	@Override
+	public String toString() {
+		return toString("");
+	}
+	
 	/**
 	 * Print board position with indentation.  Useful for formatting tree
 	 * search debug printout to indicate depth.
 	 * 
 	 * @param indent	string of spaces prepended to each row of board
 	 */
-	@Override
 	public void print(String indent) {
-		for (int i = 0; i < 3; i++) {
-			System.out.println(indent + rowToString(i));
-		}
+		System.out.print(toString(indent));
 	}
 	
 	/**
 	 * Print board position without indentation.
 	 */
-	@Override
 	public void print() {
 		print("");
-		return;
 	}
 
 	/* (non-Javadoc)

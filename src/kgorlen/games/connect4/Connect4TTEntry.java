@@ -16,12 +16,9 @@ public class Connect4TTEntry implements TTEntry {
 	private int score;
 	private short depth;
 	private long move;
-	private byte scoreType;
 
-	public Connect4TTEntry(int depth, ScoreType scoreType, int score,
-			Connect4Move move) {
+	public Connect4TTEntry(int depth, int score, Connect4Move move) {
 		this.depth = (short) depth;
-		this.scoreType = (byte) scoreType.ordinal();
 		this.score = score;
 		this.move = move.toLong();
 	}
@@ -33,7 +30,7 @@ public class Connect4TTEntry implements TTEntry {
 
 	@Override
 	public ScoreType getScoreType() {
-		return ScoreType.values[scoreType];
+		return ScoreType.EXACT;
 	}
 
 	@Override
@@ -48,8 +45,12 @@ public class Connect4TTEntry implements TTEntry {
 
 	@Override
 	public boolean isPrincipalVariation() {
-		if (scoreType == ScoreType.EXACT.ordinal()) return true;
-		return false;
+		return true;
 	}
 
+	@Override
+	public String toString() {
+		return String.format("depth=%d, score=%d, move %s",
+				depth, score, getMove().toString());
+	}
 }

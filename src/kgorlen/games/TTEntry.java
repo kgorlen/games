@@ -11,4 +11,6 @@ public interface TTEntry {
 	public Move getMove();
 	
 	public boolean isPrincipalVariation();
+	
+	public String toString();
 }

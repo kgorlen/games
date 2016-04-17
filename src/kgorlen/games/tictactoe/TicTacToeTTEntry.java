@@ -44,4 +44,9 @@ public class TicTacToeTTEntry implements TTEntry {
 		return false;
 	}
 
+	@Override
+	public String toString() {
+		return String.format("depth=%d, scoreType %s, score=%d, move %s",
+				depth, getScoreType(), score, getMove().toString());
+	}
 }

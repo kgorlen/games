@@ -2,6 +2,8 @@
  * 
  */
 package kgorlen.games;
+import java.util.logging.Logger;
+
 import kgorlen.games.Position;
 
 /**
@@ -9,10 +11,8 @@ import kgorlen.games.Position;
  *
  */
 public class DepthFirst extends TreeSearch {
-	
-	public DepthFirst(boolean debug) {
-		this.debug =debug;
-	}
+	private static final Logger LOGGER = Log.LOGGER;
+	private static final String CLASS_NAME = DepthFirst.class.getName();
 	
 	/**
 	 * @param parent	Position to be searched
@@ -21,29 +21,29 @@ public class DepthFirst extends TreeSearch {
 	 * @return			maximum score
 	 */
 	public int search(Position parent, int depth, String indent) {
-		int score;				// score for *parent* Position
 		
-		if (debug) {
-			System.out.format("%s{ DepthFirst(%d) position:%n", indent, depth);
-			parent.print(indent);
-		}
+		LOGGER.fine(() -> String.format("%s{ DepthFirst(%d) position:%n%s", 
+				indent, depth, parent.toString(indent) ));
 
 		TTEntry ttEntry = getTTEntry(parent);
 		if (ttEntry != null) {
-			score = ttEntry.getScore();
+			final int ttScore = ttEntry.getScore();
 			ttHits++;
-			if (debug) System.out.format("%s} DepthFirst(%d) returning transposition score=%d%n",
-					indent, depth, score);
-			return score;
+			LOGGER.fine(() -> String.format(
+					"%s} DepthFirst(%d) returning transposition score=%d%n",
+					indent, depth, ttScore ));
+			return ttScore;
 		}
 		
-		score = parent.evaluate(debug);
+		int score = parent.evaluate();
 
-		MoveGenerator gen = parent.moveGenerator(debug);		
+		MoveGenerator gen = parent.moveGenerator();		
 		if (depth == 0 || !gen.hasNext()) {
-			if (debug) System.out.format("%s} DepthFirst(%d) returning evaluation score=%d%n",
-					indent, depth, score);
-			return score;			
+			final int leafScore = score;
+			LOGGER.fine(() -> String.format(
+					"%s} DepthFirst(%d) returning evaluation score=%d%n",
+					indent, depth, leafScore ));
+			return leafScore;			
 		}
 
 		int bestScore = score;		// Deeper search may not improve score
@@ -53,42 +53,46 @@ public class DepthFirst extends TreeSearch {
 			positionsSearched++;
 			Position child = parent.copy();
 			child.makeMove(move);
-			if (debug) {
-				System.out.format("%sSearch move %s ...%n", indent, move.toString());
-			}
+
+			LOGGER.fine(() -> String.format("%sSearch move %s ...%n", indent, move.toString() ));
 			score = search(child, depth-1, indent + "    ");
-			if (debug) {
-				System.out.format("%s... Move %s score=%d%n", indent, move.toString(), score);
-			}
+
+			final int logScore = score;
+			LOGGER.fine(() -> String.format("%s... Move %s score=%d%n",
+					indent, move.toString(), logScore ));
+
 			if (score > bestScore) {
 				bestScore = score;
 				bestMove = move;
 				ttEntry = parent.newTTentry(depth, bestScore, bestMove);
 				putTTEntry(parent, ttEntry);
-				if (debug) {
-					System.out.format("%sPrincipal variation:%n", indent);
-					Variation pvar = getPrincipalVariation(parent);
-					pvar.print(parent, indent);
-				}
+				LOGGER.fine(() -> String.format("%sPrincipal variation:%n%s",
+						indent, this.getPrincipalVariation(parent).toString(indent) ));
 			}
 		}
 
-		if (debug) System.out.format("%s} DepthFirst.search(%d) returning search score=%d%n",
-				indent, depth, bestScore);
+		final int logScore = bestScore;
+		LOGGER.fine(() -> String.format("%s} DepthFirst.search(%d) returning search score=%d%n",
+				indent, depth, logScore ));
+
 		return bestScore;
 	}
 	
 	/**
 	 * @param parent	Position to be searched
 	 * @param depth		maximum depth to search
-	 * @return			DepthFirst instance
+	 * @return			principal Variation from search (may be null)
 	 */
-	public DepthFirst search(Position root, int depth) {
+	@Override
+	public Variation search(Position root, int depth) {
 		setRoot(root);
 		elapsedTime();
 		search(root, depth, "");
 		elapsedTime();
-		return this;		
+		logStatistics(CLASS_NAME);
+		Variation pvar = getPrincipalVariation();
+		Variation.logPrincipalVariation(pvar, CLASS_NAME);
+		return pvar;
 	}
 
 }

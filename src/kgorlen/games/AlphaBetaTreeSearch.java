@@ -1,6 +1,7 @@
 package kgorlen.games;
 
 import java.util.ArrayList;
+import java.util.logging.Logger;
 
 /**
  * @author Keith gorlen@comcast.net
@@ -8,10 +9,13 @@ import java.util.ArrayList;
  * Extend TreeSearch with support for alpha-beta cutoffs
  */
 public abstract class AlphaBetaTreeSearch extends TreeSearch {
-	private long alphaCutoffs;
-	private long betaCutoffs;
-	private int killerLength;
-	private ArrayList<Move[]> killerMoves;
+	private static final Logger LOGGER = Log.LOGGER;
+
+	private long alphaCutoffs;				// Count of alpha cutoffs during search
+	private long betaCutoffs;				// Count of beta cutoffs during search
+	private int killerLength;				// Max number of killer moves to try at each ply
+	private ArrayList<Move[]> killerMoves;	// Array of killer moves, indexed by ply
+//	@TODO index killer Moves by search depth
 	
 	/**
 	 * @param ttCapacity	transposition table capacity
@@ -65,10 +69,39 @@ public abstract class AlphaBetaTreeSearch extends TreeSearch {
 	}
 	
 	/**
+	 * Log search statistics
+	 * 
+	 * @param className Name of TreeSearch subclass
+	 */
+	@Override
+	public void logStatistics(String className) {
+		super.logStatistics(className);
+		LOGGER.info(() -> String.format(
+				"  %d alpha cutoffs, %d beta cutoffs%n",
+				getAlphaCutoffs(), getBetaCutoffs() ));
+	}
+
+	
+	/**
 	 * Print search statistics
 	 */
 	public void printStatistics() {
 		super.printStatistics();
 		System.out.format("%d alpha cutoffs, %d beta cutoffs%n", alphaCutoffs, betaCutoffs);
 	}
+
+	/**
+	 * @return the alphaCutoffs
+	 */
+	public long getAlphaCutoffs() {
+		return alphaCutoffs;
+	}
+
+	/**
+	 * @return the betaCutoffs
+	 */
+	public long getBetaCutoffs() {
+		return betaCutoffs;
+	}
+
 }

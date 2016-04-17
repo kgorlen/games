@@ -1,6 +1,7 @@
 package kgorlen.games;
 
 import java.util.HashMap;
+import java.util.logging.Logger;
 
 import kgorlen.games.TTEntry;
 
@@ -11,45 +12,33 @@ import kgorlen.games.TTEntry;
  *
  */
 public abstract class TreeSearch {
-	final static public int SCORE_INFINITY = 999999999;
+	private final static Logger LOGGER = Log.LOGGER;
+	private static final String CLASS_NAME = TreeSearch.class.getName();
+
+	public static final int SCORE_INFINITY = 999999999;
 	
-	protected boolean debug = false;
 	protected long positionsSearched = 0;
 	protected long ttHits = 0;
-	private long elapsedTime = 0;
+	protected long elapsedTime = 0;
 	private long startTime = System.nanoTime();
 	private Position root;
 	private HashMap<Position, TTEntry> transTable;
 	
-	TreeSearch(int ttCapacity) {
+	protected TreeSearch(int ttCapacity) {
 		transTable =  new HashMap<Position, TTEntry>(ttCapacity);
 	}
 	
-	TreeSearch() {
+	protected TreeSearch() {
 		transTable =  new HashMap<Position, TTEntry>(4096);
 	}
 	
 	/**
-	 * @param root		Position to be searched
-	 * @param maxDepth	maximum search depth
-	 * @return
+	 * @param root	Position to be searched
+	 * @param limit	search limit (depth, iterations, time, etc.)
+	 * @return principal Variation found by search
 	 */
-	public abstract TreeSearch search(Position root, int maxDepth);
+	public abstract Variation search(Position root, int limit);
 	
-	/**
-	 * @return the debug switch setting
-	 */
-	public boolean isDebug() {
-		return debug;
-	}
-
-	/**
-	 * @param debug set the debug switch
-	 */
-	public void setDebug(boolean debug) {
-		this.debug = debug;
-	}
-
 	/**
 	 * Reset the positions searched and transposition table
 	 */
@@ -66,6 +55,10 @@ public abstract class TreeSearch {
 	 */
 	public void putTTEntry(Position p, TTEntry ttEntry) {
 		transTable.put(p, ttEntry);
+	}
+	
+	public int getTTSize() {
+		return transTable.size();
 	}
 	
 	/**
@@ -87,18 +80,22 @@ public abstract class TreeSearch {
 	
 	/**
 	 * @param start	starting Position of Variation
-	 * @return		principal variation from start Position
+	 * @return		principal variation from start Position (may be null)
 	 */
 	public Variation getPrincipalVariation(Position start) {
+		LOGGER.finest(() -> String.format("{ Entering %s.getPrincipalVariation%n", CLASS_NAME));
 		TTEntry ttEntry = getTTEntry(start);
 		if (ttEntry == null) return null;
+		assert ttEntry.getScoreType() == ScoreType.EXACT :
+			"Principal variation score type not EXACT";
 		
-		Variation pvar = start.newVariation();
-		pvar.setScore(ttEntry.getScore());
+		Variation pvar = start.newVariation(ttEntry.getScore());
 		Position nextPosition = start.copy();
 		Move nextMove;
 		do {
-			assert ttEntry.getScoreType() == ScoreType.EXACT : "Principal variation score type not EXACT";
+			final TTEntry logTTEntry = ttEntry;
+			LOGGER.finest(() -> String.format("  Position:%n%s  TTEntry: %s%n",
+					nextPosition.toString("  "), logTTEntry.toString() ));
 			assert pvar.getScore() == (this instanceof MiniMax ? ttEntry.getScore()
 					: start.scoreSign() * nextPosition.scoreSign() * ttEntry.getScore())  // NegaMax
 					: "Principal variation scores not equal";
@@ -106,11 +103,13 @@ public abstract class TreeSearch {
 			pvar.addMove(nextMove);
 			nextPosition.makeMove(nextMove);
 		} while ((ttEntry = getTTEntry(nextPosition)) != null);
+		
+		LOGGER.finest(() -> String.format("} Exiting %s.getPrincipalVariation%n", CLASS_NAME));
 		return pvar;
 	}
 	
 	/**
-	 * @return	principal variation from root Position
+	 * @return	principal variation from root Position  (may be null)
 	 */
 	public Variation getPrincipalVariation() {
 		return getPrincipalVariation(getRoot());
@@ -160,11 +159,27 @@ public abstract class TreeSearch {
 	}
 		
 	/**
+	 * Log search statistics
+	 * 
+	 * @param className Name of TreeSearch subclass
+	 */
+	public void logStatistics(String className) {
+		LOGGER.info(() -> String.format(
+				"%s.search statistics:%n", className));
+		LOGGER.info(() -> String.format(
+				"  %d positions searched in %fs (%,d positions/s)%n",
+				positionsSearched, elapsedTime/1E9, 1000000000*positionsSearched/elapsedTime));
+		LOGGER.info(() -> String.format(
+				"  %d TT entries, %d TT hits%n",
+				getTTSize(), ttHits ));		
+	}
+	
+	/**
 	 * Print search statistics
 	 */
 	public void printStatistics() {
-		System.out.format("%d positions searched in %.2fus (%.2f positions/us)%n%d TT entries, %d TT hits%n",
-							positionsSearched, elapsedTime/1000.0, 1000.0*positionsSearched/elapsedTime,
+		System.out.format("%d positions searched in %fs (%,d positions/s)%n%d TT entries, %d TT hits%n",
+							positionsSearched, elapsedTime/1E9, 1000000000*positionsSearched/elapsedTime,
 							transTable.size(), ttHits);
 	}
 }

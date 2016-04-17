@@ -1,11 +1,17 @@
 package kgorlen.games.tictactoe;
 
 import java.util.Scanner;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 import kgorlen.games.tictactoe.TicTacToePosition;
 import kgorlen.games.TreeSearch;
+import kgorlen.games.Variation;
 import kgorlen.games.NegaMaxAlphaBeta;
 import kgorlen.games.NegaMax;
+import kgorlen.games.Log;
 import kgorlen.games.MiniMax;
+
 
 /**
  * @author		Keith gorlen@comcast.net
@@ -15,18 +21,21 @@ import kgorlen.games.MiniMax;
 public class TicTacToe {
 	static Scanner Input = new Scanner(System.in);	// Command input stream
 	
-	static boolean Debug = false;					// Debug printout enable
-	
+	private final static Logger LOGGER = Log.LOGGER;
+
 	/**
-	 * Toggle Debug switch
-	 * 
-	 * @return	new Debug switch setting
+	 * Step debug log level
 	 */
-	static boolean toggleDebug() {
-		Debug = !Debug;
-		if (Debug) System.out.println("Debug ON");
-		else System.out.println("Debug OFF");						
-		return Debug;
+	static void stepDebug() {
+		String levels[] = {/*"OFF", "SEVERE",*/ "WARNING", "INFO", /*"CONFIG",*/ "FINE", "FINER", "FINEST"/*, "ALL"*/};
+		String current = LOGGER.getLevel().toString();
+		for (int i=0; i<levels.length; i++) {
+			if (current == levels[i]) {
+				LOGGER.setLevel(Level.parse(levels[(i+1)%levels.length]));
+				break;
+			}
+		}
+		System.out.println("Log level " + LOGGER.getLevel().toString());
 	}
 
 	/**
@@ -52,15 +61,15 @@ public class TicTacToe {
 			
 			String cmd = Input.next();
 			switch (cmd) {
-				case "D":
-				case "d": 		// Toggle debug mode
-					toggleDebug();
-					continue;
-				case "Q":		// Quit
-				case "q":  
-					System.exit(0);
-				default:
-					System.out.println("Invalid command");
+			case "D":
+			case "d": 		// Step debug mode
+				stepDebug();
+				continue;
+			case "Q":		// Quit
+			case "q":  
+				System.exit(0);
+			default:
+				System.out.println("Invalid command");
 			}
 		}
 	}
@@ -89,61 +98,67 @@ public class TicTacToe {
 	 * @param args none
 	 */
 	public static void main(String []args){
+		LOGGER.setLevel(Level.INFO);
 	
 		while (true) {
-			TreeSearch miniMax = new MiniMax(Debug);
-			TreeSearch negaMax = new NegaMax(Debug);
-			TreeSearch negaMaxPruned = new NegaMaxAlphaBeta(Debug);;
+			TreeSearch miniMax = new MiniMax();
+			TreeSearch negaMax = new NegaMax();
+			TreeSearch negaMaxPruned = new NegaMaxAlphaBeta();;
 			TicTacToePosition root = new TicTacToePosition();	// Initialize game
 
 			System.out.print("Enter 'x', 'o', 'd', or 'q':");
 			String cmd = Input.next();
 			switch (cmd) {
-				case "X":
-				case "x":		// User plays X
+			case "X":
+			case "x":		// User plays X
+				root.print();
+				opponentsMove(root);
+			case "O":
+			case "o": {		// Machine plays X
+				while (!isGameOver(root)) {
+					Variation miniMaxPvar = miniMax.search(root, 10);
+					Variation negaMaxPvar = negaMax.search(root, 10);
+					if (!miniMaxPvar.equals(negaMaxPvar)) {
+						LOGGER.warning("MiniMax and NegaMax search results differ\n");
+						LOGGER.warning(String.format("MiniMax principal variation:%n%s",
+								miniMaxPvar.toString() ));
+						LOGGER.warning(String.format("NegaMax principal variation:%n%s",
+								negaMaxPvar.toString() ));
+					}
+					TicTacToeMoveGenerator.resetStatistics();
+					Variation negaMaxPrunedPvar = negaMaxPruned.search(root, 10);
+					if (!negaMaxPrunedPvar.getMove().equals(negaMaxPvar.getMove())
+							|| negaMaxPrunedPvar.getScore() != negaMaxPvar.getScore()) {
+						LOGGER.warning("NegaMax and NegaMaxAlphaBeta search results differ:\n");
+						LOGGER.warning(String.format("  NegaMax move %s (score=%d)%n  NegaMaxAlphaBeta move %s (score=%d)%n",
+								negaMaxPvar.getMove().toString(), negaMaxPvar.getScore(),
+								negaMaxPrunedPvar.getMove().toString(), negaMaxPrunedPvar.getScore() ));
+
+					}
+					TicTacToeMoveGenerator.logStatistics();
+					System.out.format("Machine's move %s (score=%d):%n",
+							negaMaxPrunedPvar.getMove().toString(),
+							negaMaxPrunedPvar.getScore());
+					root.makeMove(negaMaxPrunedPvar.getMove());
 					root.print();
+					if (isGameOver(root)) break;
 					opponentsMove(root);
-				case "O":
-				case "o": {		// Machine plays X
-					while (!isGameOver(root)) {
-						negaMax.search(root, 10);
-						TicTacToeMoveGenerator.resetStatistics();
-						negaMaxPruned.search(root, 10);
-						if (((TicTacToeMove) negaMaxPruned.getMove(root)).toShort() !=
-								((TicTacToeMove) negaMax.getMove(root)).toShort()) {
-							System.out.format("NegaMax move %s (score=%d):%n",
-									negaMax.getMove(root).toString(),
-									negaMax.getScore(root));
-							
-						}
-						System.out.print("NegaMax search statistics:\n");
-						negaMax.printStatistics();
-						System.out.print("NegaMaxAlphaBeta search statistics:\n");
-						negaMaxPruned.printStatistics();
-						TicTacToeMoveGenerator.printStatistics();
-						System.out.format("Machine's move %s (score=%d):%n",
-								negaMaxPruned.getMove(root).toString(),
-								negaMaxPruned.getScore(root));
-						root.makeMove(negaMaxPruned.getMove(root));
-						root.print();
-						if (isGameOver(root)) break;
-						opponentsMove(root);
-					} ;
-					break;
-				}
+				} ;
+				break;
+			}
 
-				case "D":
-				case "d": 		// Toggle debug mode
-					toggleDebug();
-					break;
+			case "D":
+			case "d": 		// Step debug mode
+				stepDebug();
+				break;
 
-				case "Q":		// Quit
-				case "q":  
-					return;
+			case "Q":		// Quit
+			case "q":  
+				return;
 
-				default:
-					System.out.println("Invalid command");
-					break;
+			default:
+				System.out.println("Invalid command");
+				break;
 			} 
 		}
 	}

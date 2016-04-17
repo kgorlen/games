@@ -43,22 +43,24 @@ public interface Position {
 
 	/**
 	 * Evaluate a quiescent position.
-	 * @param debug TODO
 	 * 
 	 * @return	throws unchecked RuntimeException
 	 */
-	public int evaluate(boolean debug);
+	public int evaluate();
 
 	/**
 	 * Create a MoveGenerator for this Position
 	 * 
-	 * @param debug enable/disable debug; default: false
-	 * @return	instance of a MoveGenerator for this Position
+	 * @param killers Moves to generate first
+	 * @return instance of a MoveGenerator for this Position
 	 */
-	public MoveGenerator moveGenerator(Move[] killers, boolean debug);
+	public MoveGenerator moveGenerator(Move[] killers);
 
-	public MoveGenerator moveGenerator(boolean debug);
-
+	/**
+	 * Create a MoveGenerator for this Position
+	 * 
+	 * @return instance of a MoveGenerator for this Position
+	 */
 	public MoveGenerator moveGenerator();
 
 	/**
@@ -69,6 +71,14 @@ public interface Position {
 	public Variation newVariation();
 
 	/**
+	 * Create a Variation for specified Position with specified score
+	 * 
+	 * @param score of Variation
+	 * @return	instance of a Variation for this Position
+	 */
+	public Variation newVariation(int score);
+
+	/**
 	 * Format row of Position as String
 	 * 
 	 * @param row to format
@@ -77,18 +87,19 @@ public interface Position {
 	public String rowToString(int row);
 	
 	/**
-	 * Print board position with indentation.  Useful for formatting tree
-	 * search debug printout to indicate depth.
+	 * Printable board position with indentation.  Useful for formatting tree
+	 * search log to indicate depth.
 	 * 
-	 * @param indent	string of spaces prepended to each row of board
+	 * @param indent string of spaces prepended to each line 
+	 * @return printable, indented String representation of Position
 	 */
-	public void print(String indent);
+	public String toString(String indent);
 
 	/**
-	 * Print board position without indentation.
+	 * @return printable String representation of Position
 	 */
-	public void print();
-
+	public String toString();
+	
 	/**
 	 * @return	hashCode for this Position
 	 */

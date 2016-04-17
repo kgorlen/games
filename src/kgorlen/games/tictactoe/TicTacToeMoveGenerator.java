@@ -1,7 +1,9 @@
 package kgorlen.games.tictactoe;
 
 import java.util.NoSuchElementException;
+import java.util.logging.Logger;
 
+import kgorlen.games.Log;
 import kgorlen.games.Move;
 import kgorlen.games.MoveGenerator;
 
@@ -12,6 +14,9 @@ import kgorlen.games.MoveGenerator;
  *
  */
 public class TicTacToeMoveGenerator implements MoveGenerator {
+	private final static Logger LOGGER = Log.LOGGER;
+	private static final String CLASS_NAME = TicTacToeMoveGenerator.class.getName();
+
 	private static enum State {
 		INITIAL, KILLER, THREATEN_159, THREATEN_357,
 		THREATEN_ROW,  THREATEN_COL, CENTER, CORNERS, SIDES
@@ -26,16 +31,15 @@ public class TicTacToeMoveGenerator implements MoveGenerator {
 		}
 	}
 
-	public static void printStatistics() {
-		System.out.print("Move types:");
+	public static void logStatistics() {
+		StringBuilder s = new StringBuilder("  Move types:");
 		for (State i : State.values()) {
 			if (i == State.INITIAL) continue;
-			System.out.format(" %s=%d", i, MoveCount[i.ordinal()]);
+			s.append(String.format(" %s=%d", i, MoveCount[i.ordinal()]));
 		}
-		System.out.println();
+		LOGGER.info(s.toString() + "\n");
 	}
 	
-	private boolean debug;
 	private State currentState;
 	private TicTacToePosition currentPosition;	// current GamePosition
 	private Move[] killers;						// killer moves from sibling positions
@@ -53,8 +57,7 @@ public class TicTacToeMoveGenerator implements MoveGenerator {
 	 * 
 	 * @param p	starting/current GamePosition
 	 */
-	public TicTacToeMoveGenerator(TicTacToePosition p, Move[] killers, boolean debug) {
-		this.debug = debug;
+	public TicTacToeMoveGenerator(TicTacToePosition p, Move[] killers) {
 		currentState = State.INITIAL;
 		currentPosition = p;
 		this.killers = killers;
@@ -64,7 +67,7 @@ public class TicTacToeMoveGenerator implements MoveGenerator {
 	}
 	
 	public TicTacToeMoveGenerator(TicTacToePosition p) {
-		this(p, new Move[0], false);
+		this(p, new Move[0]);
 	}
 	
 	/**
@@ -86,104 +89,119 @@ public class TicTacToeMoveGenerator implements MoveGenerator {
 	 * 
 	 */
 	public Move next() {	// Return next move
+		LOGGER.finest(() -> String.format(
+				"{ Entering %s.next currentState=%s%n", CLASS_NAME, currentState));
+
 		if (empty == 0) throw new NoSuchElementException();
 		
 		short nextMove;
 		int m = 0;
 		switch (currentState) {
-			case INITIAL:
-			case KILLER:			// beta cutoff moves from sibling position searches
-				currentState = State.KILLER;
-				for (int i=0; i<killers.length; i++) {
-					if (killers[i] == null) break;
-					m = empty & ((TicTacToeMove) killers[i]).toShort();
-					if (m != 0) break;
-				}
-				if (m != 0) {
-					if (debug) {
-						System.out.format("%s killer move=%03x, position:%n",
-								currentPosition.sideToMove(), m);
-						currentPosition.print();
-					}
-					MoveCount[currentState.ordinal()]++;
-					break;
-				}
-			case THREATEN_159:						// Threaten or win 1-5-9 diagonal
-				currentState = State.THREATEN_159;
-				m = empty & 0x421;
-				if (m != 0							// at least one empty square
-					&& (mysq & 0x421) != 0			// at least one occupied by me
-					&& (opsq & 0x421) == 0) {		// not blocked by opponent
-					MoveCount[currentState.ordinal()]++;
-					break;						
-				}
-			case THREATEN_357:						// Threaten or win 3-5-7 diagonal
-				currentState = State.THREATEN_357;
-				m = empty & 0x124;
-				if (m != 0							// at least one empty square
-					&& (mysq & 0x124) != 0			// at least one occupied by me
-					&& (opsq & 0x124) == 0) {		// not blocked by opponent
-					MoveCount[currentState.ordinal()]++;
-					break;
-				}
-			case THREATEN_ROW:						// Threaten or win three in a row
-				currentState = State.THREATEN_ROW;
-				m = empty;
-				m = (m & 0x111) | (m & 0x222)>>1 | (m & 0x444>>2);				// at least one empty square
-				m &= (mysq&0x111) | ((mysq&0x222)>>1) | ((mysq&0x444)>>2);		// at least one occupied by me
-				m &= ~((opsq&0x111) | ((opsq&0x222)>>1) | ((opsq&0x444)>>2));	// not blocked by opponent
-				if (m != 0) {
-					m = (empty & m) | (empty & m<<1) | (empty & m<<2);
-					if (debug) {
-						System.out.format("%s threaten three-in-a-row move=%03x, position:%n",
-								currentPosition.sideToMove(), m);
-						currentPosition.print();
-					}
-					MoveCount[currentState.ordinal()]++;
-					break;
-				}
-			case THREATEN_COL:						// Threaten or win three in a column
-				currentState = State.THREATEN_COL;
-				m = empty;
-				m = (m & 0x007) | ((m & 0x070)>>4) | ((m & 0x700)>>8);			// at least one empty square
-				m &= (mysq&0x007) | ((mysq&0x070)>>4) | ((mysq&0x700)>>8);		// at least one occupied by me
-				m &= ~((opsq&0x007) | ((opsq&0x070)>>4) | ((opsq&0x700)>>8));	// not blocked by opponent
-				if (m != 0) {
-					m = (empty & m) | (empty & m<<4) | (empty & m<<8);
-					if (debug) {
-						System.out.format("%s threaten three-in-a-column move=%03x, position:%n",
-								currentPosition.sideToMove(), m);
-						currentPosition.print();
-					}
-					MoveCount[currentState.ordinal()]++;
-					break;
-				}
-			case CORNERS:				// Corners
-				currentState = State.CORNERS;
-				m = empty & 0x505;
-				if (m != 0) {
-					MoveCount[currentState.ordinal()]++;
-					break;
-				}
-			case CENTER:				// Center
-				currentState = State.CENTER;
-				m = empty & 0x020;
-				if (m != 0) {
-					MoveCount[currentState.ordinal()]++;
-					break;
-				}
-			case SIDES:					// Sides
-				currentState = State.SIDES;
-				m = empty & 0x252;
-				if (m != 0) {
-					MoveCount[currentState.ordinal()]++;
-					break;
-				}
-			default:					// All moves generated
-				return null;
+		case INITIAL:
+		case KILLER: {			// beta cutoff moves from sibling position searches
+			currentState = State.KILLER;
+			for (int i=0; i<killers.length; i++) {
+				if (killers[i] == null) break;
+				m = empty & ((TicTacToeMove) killers[i]).toShort();
+				if (m != 0) break;	// Playable killer found
+			}
+			if (m != 0) {
+				final int n = m;
+				LOGGER.finest(() -> String.format(
+						"  %s killer move=%03x, position:%n%s",
+						currentPosition.sideToMove(), n, currentPosition.toString("  ") ));
+				break;
+			}
+		}
+		case THREATEN_159: {	// Threaten or win 1-5-9 diagonal
+			currentState = State.THREATEN_159;
+			final int n = m = empty & 0x421;
+			if (m != 0							// at least one empty square
+					&& (mysq & 0x421) != 0		// at least one occupied by me
+					&& (opsq & 0x421) == 0) {	// not blocked by opponent
+				LOGGER.finest(() -> String.format(
+						"  %s threaten 159 moves=%03x, position:%n%s",
+						currentPosition.sideToMove(), n, currentPosition.toString("  ") ));
+				break;						
+			}
+		}
+		case THREATEN_357: {	// Threaten or win 3-5-7 diagonal
+			currentState = State.THREATEN_357;
+			final int n = m = empty & 0x124;
+			if (m != 0							// at least one empty square
+					&& (mysq & 0x124) != 0		// at least one occupied by me
+					&& (opsq & 0x124) == 0) {	// not blocked by opponent
+				LOGGER.finest(() -> String.format(
+						"  %s threaten 357 moves=%03x, position:%n%s",
+						currentPosition.sideToMove(), n, currentPosition.toString("  ") ));
+				break;
+			}
+		}
+		case THREATEN_ROW:		// Threaten or win three in a row
+			currentState = State.THREATEN_ROW;
+			m = empty;
+			m = (m & 0x111) | (m & 0x222)>>1 | (m & 0x444>>2);				// at least one empty square
+			m &= (mysq&0x111) | ((mysq&0x222)>>1) | ((mysq&0x444)>>2);		// at least one occupied by me
+			m &= ~((opsq&0x111) | ((opsq&0x222)>>1) | ((opsq&0x444)>>2));	// not blocked by opponent
+			if (m != 0) {
+				final int n = m = (empty & m) | (empty & m<<1) | (empty & m<<2);
+				LOGGER.finest(() -> String.format(
+						"  %s threaten three-in-a-row moves=%03x, position:%n%s",
+						currentPosition.sideToMove(), n, currentPosition.toString("  ") ));
+				break;
+			}
+		case THREATEN_COL:		// Threaten or win three in a column
+			currentState = State.THREATEN_COL;
+			m = empty;
+			m = (m & 0x007) | ((m & 0x070)>>4) | ((m & 0x700)>>8);			// at least one empty square
+			m &= (mysq&0x007) | ((mysq&0x070)>>4) | ((mysq&0x700)>>8);		// at least one occupied by me
+			m &= ~((opsq&0x007) | ((opsq&0x070)>>4) | ((opsq&0x700)>>8));	// not blocked by opponent
+			if (m != 0) {
+				final int n = m = (empty & m) | (empty & m<<4) | (empty & m<<8);
+				LOGGER.finest(() -> String.format(
+						"  %s threaten three-in-a-column moves=%03x, position:%n%s",
+						currentPosition.sideToMove(), n, currentPosition.toString("  ") ));
+				break;
+			}
+		case CORNERS: {			// Corners
+			currentState = State.CORNERS;
+			final int n = m = empty & 0x505;
+			if (m != 0) {
+				LOGGER.finest(() -> String.format(
+						"  %s corner moves=%03x, position:%n%s",
+						currentPosition.sideToMove(), n, currentPosition.toString("  ") ));
+				break;
+			}
+		}
+		case CENTER: {			// Center
+			currentState = State.CENTER;
+			final int n = m = empty & 0x020;
+			if (m != 0) {
+				LOGGER.finest(() -> String.format(
+						"  %s center move=%03x, position:%n%s",
+						currentPosition.sideToMove(), n, currentPosition.toString("  ") ));
+				break;
+			}
+		}
+		case SIDES: {			// Sides
+			currentState = State.SIDES;
+			final int n = m = empty & 0x252;
+			if (m != 0) {
+				LOGGER.finest(() -> String.format(
+						"  %s side moves=%03x, position:%n%s",
+						currentPosition.sideToMove(), n, currentPosition.toString("  ") ));
+				break;
+			}
+		}
+		default:				// All moves generated
+			throw new RuntimeException("No move generated");
 		}
 		nextMove = (short) (m & ~(m-1));	// select next move
 		empty ^= nextMove;					// mark occupied
+		MoveCount[currentState.ordinal()]++;
+		LOGGER.finest(() -> String.format(
+				"} Exiting %s.next, returning move %s%n",
+				CLASS_NAME, new TicTacToeMove(nextMove).toString() ));
 		return new TicTacToeMove(nextMove);
 	}
 }

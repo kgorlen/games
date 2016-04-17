@@ -1,11 +1,14 @@
 package kgorlen.games.connect4;
 
 import java.util.Scanner;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
-import kgorlen.games.MonteCarloTreeSearch;
+import kgorlen.games.Log;
 import kgorlen.games.Move;
 import kgorlen.games.TreeSearch;
 import kgorlen.games.Variation;
+import kgorlen.games.mcts.MonteCarloTreeSearch;
 
 
 /**
@@ -16,20 +19,23 @@ import kgorlen.games.Variation;
 public class Connect4 {
 	static int SEARCH_LIMIT = 1000;		// search limit (iterations)
 	static Scanner Input = new Scanner(System.in);	// Command input stream
-	static boolean Debug = false;					// Debug printout enable
-	
-	/**
-	 * Toggle Debug switch
-	 * 
-	 * @return	new Debug switch setting
-	 */
-	static boolean toggleDebug() {
-		Debug = !Debug;
-		if (Debug) System.out.println("Debug ON");
-		else System.out.println("Debug OFF");						
-		return Debug;
-	}
+	private static final Logger LOGGER = Log.LOGGER;
 
+	/**
+	 * Step debug log level
+	 */
+	static void stepDebug() {
+		String levels[] = {/*"OFF", "SEVERE",*/ "WARNING", "INFO", /*"CONFIG",*/ "FINE", "FINER", "FINEST"/*, "ALL"*/};
+		String current = LOGGER.getLevel().toString();
+		for (int i=0; i<levels.length; i++) {
+			if (current == levels[i]) {
+				LOGGER.setLevel(Level.parse(levels[(i+1)%levels.length]));
+				break;
+			}
+		}
+		System.out.println("Log level " + LOGGER.getLevel().toString());
+	}
+	
 	/**
 	 * Read and play opponent's move or command.
 	 * 
@@ -41,8 +47,8 @@ public class Connect4 {
 			String cmd = Input.next();
 			switch (cmd) {
 				case "V":
-				case "v": 		// Toggle debug (verbose) mode
-					toggleDebug();
+				case "v": 		// step logging level (verbosity)
+					stepDebug();
 					continue;
 				case "Q":		// Quit
 				case "q":  
@@ -86,9 +92,10 @@ public class Connect4 {
 	 * @param args none
 	 */
 	public static void main(String []args){
+		LOGGER.setLevel(Level.INFO);
 	
 		while (true) {
-			TreeSearch mcts = new MonteCarloTreeSearch(Debug);
+			TreeSearch mcts = new MonteCarloTreeSearch();
 			Connect4Position root = new Connect4Position();	// Initialize game
 
 			System.out.print("Enter 'x', 'o', 'v', or 'q':");
@@ -102,8 +109,6 @@ public class Connect4 {
 				case "o": {		// Machine plays X
 					while (!isGameOver(root)) {
 						mcts.search(root, SEARCH_LIMIT);
-						System.out.print("Monte Carlo search statistics:\n");
-						mcts.printStatistics();
 						Variation pv = mcts.getPrincipalVariation();
 						Move move = pv.getMove();
 						System.out.printf("%d. Machine's move %s (score=%d):%n",
@@ -120,7 +125,7 @@ public class Connect4 {
 
 				case "V":
 				case "v": 		// Toggle debug (verbose) mode
-					toggleDebug();
+					stepDebug();
 					break;
 
 				case "Q":		// Quit

@@ -13,7 +13,6 @@ import kgorlen.games.MoveGenerator;
  *
  */
 public class Connect4MoveGenerator implements MoveGenerator {
-	private boolean debug;
 	private long moves;		// bitmask of legal moves
 
 	/**
@@ -22,8 +21,7 @@ public class Connect4MoveGenerator implements MoveGenerator {
 	 * @param p	starting/current GamePosition
 	 * @param debug enable debug output
 	 */
-	public Connect4MoveGenerator(Connect4Position p, boolean debug) {
-		this.debug = debug;
+	public Connect4MoveGenerator(Connect4Position p) {
 		moves = p.moves();
 	}
 		

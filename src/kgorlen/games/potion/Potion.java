@@ -35,7 +35,7 @@
 	-4EON -2WOB +3AF +4TOW 
 	-4EON -2WOB +3AF +4TOW 
 	-4TOF -7TOW -2AF +1POTION 
-	score=6985
+	score=7
 	Stock remaining:
 	POTION = 7
 	EON = 2
@@ -43,9 +43,9 @@
 	WOB = 4
 	AF = 15
 	TOW = 3
-	10899 positions searched in 70740.54us (0.15 positions/us)
+	10899 positions searched in 0.003874s (2,813,571 positions/s)
 	2687 TT entries, 5841 TT hits
-
+	
 	Enter amount of EON:4
 	Enter amount of TOF:4
 	Enter amount of WOB:2
@@ -54,7 +54,7 @@
 	Brewed 1 units of potion with the reactions:
 	-4EON -2WOB +3AF +4TOW 
 	-4TOF -7TOW -2AF +1POTION 
-	score=998
+	score=1
 	Stock remaining:
 	POTION = 1
 	EON = 0
@@ -62,9 +62,9 @@
 	WOB = 0
 	AF = 1
 	TOW = 0
-	7 positions searched in 95.55us (0.07 positions/us)
+	7 positions searched in 0.000026s (273,983 positions/s)
 	2 TT entries, 0 TT hits
-
+	
 	Enter amount of EON:0
 	Enter amount of TOF:3
 	Enter amount of WOB:1
@@ -73,7 +73,7 @@
 	Brewed 1 units of potion with the reactions:
 	-1WOB -2AF +1TOF 
 	-4TOF -7TOW -2AF +1POTION 
-	score=998
+	score=1
 	Stock remaining:
 	POTION = 1
 	EON = 0
@@ -81,9 +81,9 @@
 	WOB = 0
 	AF = 0
 	TOW = 0
-	9 positions searched in 20.44us (0.44 positions/us)
+	9 positions searched in 0.000010s (880,626 positions/s)
 	2 TT entries, 0 TT hits
-
+	
 	Enter amount of EON:0
 	Enter amount of TOF:6
 	Enter amount of WOB:2
@@ -94,7 +94,7 @@
 	-3TOW -1TOF +2EON 
 	-4EON -2WOB +3AF +4TOW 
 	-4TOF -7TOW -2AF +1POTION 
-	score=996
+	score=1
 	Stock remaining:
 	POTION = 1
 	EON = 0
@@ -102,14 +102,18 @@
 	WOB = 0
 	AF = 1
 	TOW = 0
-	9 positions searched in 38.32us (0.23 positions/us)
+	9 positions searched in 0.000011s (819,224 positions/s)
 	4 TT entries, 0 TT hits
 
  */
 package kgorlen.games.potion;
 
 import java.util.Scanner;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 import kgorlen.games.DepthFirst;
+import kgorlen.games.Log;
 import kgorlen.games.Move;
 import kgorlen.games.Variation;
 
@@ -119,9 +123,12 @@ import kgorlen.games.Variation;
  */
 public class Potion {
 	static Scanner Input = new Scanner(System.in);	// Command input stream
-	static boolean Debug = false;					// Debug printout enable
+	static final Logger LOGGER = Log.LOGGER;
 	
 	public static void main(String[] args) {
+		LOGGER.setLevel(Level.INFO);
+//		LOGGER.setLevel(Level.ALL);
+		
 		while (true) {
 			PotionStock root = new PotionStock();
 			int maxDepth = 0;
@@ -135,20 +142,16 @@ public class Potion {
 				maxDepth += amount;			// A reaction consumes at least 1 unit of some ingredient
 			}
 			
-			DepthFirst searchResults = new DepthFirst(Debug);
-			searchResults.search(root, maxDepth);
-			Variation pvar = searchResults.getPrincipalVariation();
+			DepthFirst searchResults = new DepthFirst();
+			Variation pvar = searchResults.search(root, maxDepth);
 			if (pvar != null) {
-				int brewed = searchResults.getScore();
 				for (Move m : pvar) root.makeMove(m);
-				System.out.format("Brewed %d units of potion with the reactions:%n", brewed);
-				pvar.print(root);
+				System.out.format("Brewed %d units of potion%n", pvar.getScore());
 			} else {
 				System.out.println("Brewed 0 units of potion");
 			}
 			System.out.println("Stock remaining:");
 			root.print();
-			searchResults.printStatistics();
 		}
 	}
 }

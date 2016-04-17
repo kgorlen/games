@@ -27,6 +27,7 @@ public class Reaction implements Move {
 		return true;
 	}
 
+	@Override
 	public String toString() {
 		StringBuilder f = new StringBuilder();
 		Formatter formatter = new Formatter(f);
