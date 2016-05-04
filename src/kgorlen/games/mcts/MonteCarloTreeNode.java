@@ -130,18 +130,18 @@ public abstract class MonteCarloTreeNode implements GamePosition {
 
     public MonteCarloTreeNode select(List<MonteCarloTreeNode> visited) throws MCTSSearchException {
         MonteCarloTreeNode selected = null;
-        double bestValue = Double.MIN_VALUE;
+        double bestValue = Double.NEGATIVE_INFINITY;
         for (MonteCarloTreeNode c : children) {
         	if (c.isWin()) {
         		visited.add(c);
-        		updateStats(visited, c.scoreWin());
+        		MCTSClassic.updateStats(updateStats(visited, c.scoreWin()));
         		if (this == visited.get(0))
         			throw new MCTSSearchException("Win from root position");
         		return null;
         	}
         	if (c.isDraw()) {
         		visited.add(c);
-        		updateStats(visited, c.scoreDraw());
+        		MCTSClassic.updateStats(visited, c.scoreDraw());
         		continue;
         	}
             double uctValue =
@@ -158,152 +158,117 @@ public abstract class MonteCarloTreeNode implements GamePosition {
         return selected;
     }
 
-	/* (non-Javadoc)
-	 * @see kgorlen.games.Position#evaluate()
-	 */
-	@Override
-	public int evaluate() {
-		MonteCarloTreeNode parent = this;
-		while (true) {
-	        List<Move> moves = new ArrayList<Move>();
-			MoveGenerator gen = parent.moveGenerator();		
-			while (gen.hasNext()) {
-				Move move = gen.next();
-				MonteCarloTreeNode child = (MonteCarloTreeNode) parent.copy();
-				child.makeMove(move);
+    /* (non-Javadoc)
+     * @see kgorlen.games.Position#evaluate()
+     */
+    @Override
+    public int evaluate() {
+    	MonteCarloTreeNode parent = this;
+    	while (true) {
+    		List<Move> moves = new ArrayList<Move>();
+    		MoveGenerator gen = parent.moveGenerator();		
+    		while (gen.hasNext()) {
+    			Move move = gen.next();
+    			MonteCarloTreeNode child = (MonteCarloTreeNode) parent.copy();
+    			child.makeMove(move);
 
-								if (child.isWin()) {
-					final MonteCarloTreeNode p = parent;
-					LOGGER.finest(() -> String.format(
-							"Winning move %s at ply %d on 0x%h (parent 0x%h):%n%s",
-							move.toString(), child.getPly(), System.identityHashCode(child),
-							System.identityHashCode(p), child.toString() ));
-					return child.scoreWin();
+    			if (child.isWin()) {
+    				final MonteCarloTreeNode p = parent;
+    				LOGGER.finest(() -> String.format(
+    						"Winning move %s at ply %d on 0x%h (parent 0x%h):%n%s",
+    						move.toString(), child.getPly(), System.identityHashCode(child),
+    						System.identityHashCode(p), child.toString() ));
+    				return child.scoreWin();
+    			}
+
+    			moves.add(move);
+    		}
+
+    		MonteCarloTreeNode child = (MonteCarloTreeNode) parent.copy();
+    		Move randMove = moves.get(randNum.nextInt(moves.size()));
+
+    		final MonteCarloTreeNode p = parent;
+    		LOGGER.finest(() -> String.format(
+    				"Playing move %s at ply %d on 0x%h (parent 0x%h):%n%s",
+    				randMove.toString(), child.getPly(), System.identityHashCode(child),
+    				System.identityHashCode(p), child.toString() ));
+
+    		child.makeMove(randMove);
+    		if (child.isDraw()) return child.scoreSign() * child.scoreDraw();
+    		parent = child;
+    	}
+    }
+	
+	/**
+	 * References:
+	 * [1] http://ccg.doc.gold.ac.uk/teaching/ludic_computing/ludic16.pdf
+	 * [2] https://jeffbradberry.com/posts/2015/09/intro-to-monte-carlo-tree-search/
+	 * [3] https://github.com/theKGS/MCTS
+	 * 
+	 * [1] Best move = highest UCT--but why include regret term?
+	 * [2] Best move = highest win percent
+	 * [3] Best move = most visited
+	 * 
+	 * @return principal Variation (moves w/ highest win percent as per [2])
+	 */
+	public Variation getPrincipalVariation() {
+		LOGGER.finer(() -> String.format("Entering %s.getPrincipalVariation%n", CLASS_NAME));
+
+		Variation pvar = newVariation();
+		MonteCarloTreeNode parent = this;
+		pvar.setStart(this);
+
+		while (!parent.isLeaf()) {
+			final MonteCarloTreeNode logParent = parent;
+			LOGGER.finer(() -> String.format(
+					"  Finding best move at ply %d ...%n", logParent.getPly()));
+
+			MonteCarloTreeNode bestChild = null;
+			float bestAvg = Float.NEGATIVE_INFINITY;
+
+			for (MonteCarloTreeNode child : parent.children) {
+				assert child.move != null : "Null move at ply %d";
+
+				LOGGER.finer(() -> String.format(
+						"    %s total/visits: %d/%d",
+						child.getMove().toString(), child.score, child.visits));
+
+				if (child.visits == 0) {
+					LOGGER.finer("\n");
+					continue;	        	
 				}
-				
-				moves.add(move);
+				float avgValue =((float) child.score)/child.visits;
+				LOGGER.finer(() -> String.format(" (%%%.0f)%n", avgValue*100));
+
+				if (avgValue > bestAvg) {
+					bestChild = child;
+					bestAvg = avgValue;
+				}
+			}	        
+
+			if (bestChild == null) {
+				assert pvar.size() > 0 : "getPrincipalVariation failed";
+				return pvar;
 			}
 
-			MonteCarloTreeNode child = (MonteCarloTreeNode) parent.copy();
-			Move randMove = moves.get(randNum.nextInt(moves.size()));
+			final MonteCarloTreeNode logChild = bestChild;
+			final float logAvg = bestAvg;
+			LOGGER.finer(() -> String.format(
+					"  ... Best move at ply %d is %s (%%%.0f)%n",
+					logParent.getPly(), logChild.getMove().toString(), logAvg*100));
 
-			final MonteCarloTreeNode p = parent;
-			LOGGER.finest(() -> String.format(
-				"Playing move %s at ply %d on 0x%h (parent 0x%h):%n%s",
-				randMove.toString(), child.getPly(), System.identityHashCode(child),
-				System.identityHashCode(p), child.toString() ));
-
-			child.makeMove(randMove);
-			if (child.isDraw()) return child.scoreSign() * child.scoreDraw();
-			parent = child;
+			if (pvar.size() == 0) pvar.setScore((int) Math.round(bestAvg*100));
+			pvar.add(bestChild.move);
+			parent = bestChild;
+			assert (pvar.size() <= 6*7) : "Variation size exceeded";
 		}
+
+		LOGGER.finer(() -> String.format(
+				"Exiting %s.getPrincipalVariation first move %s with score %d at ply %d%n",
+				CLASS_NAME, pvar.getMove().toString(), pvar.getScore(), pvar.getStart().getPly() ));
+
+		return pvar;
 	}
-	
-    /**
-     * References:
-     * [1] http://ccg.doc.gold.ac.uk/teaching/ludic_computing/ludic16.pdf
-     * [2] https://jeffbradberry.com/posts/2015/09/intro-to-monte-carlo-tree-search/
-     * 
-     * [1] Score for node includes both wins and losses; all nodes updated.
-     * [2] Score for node includes only wins; winning player nodes updated.
-     * 
-     * @param visited List of nodes visited during selection and expansion
-     * @param score from playout: -1 = root player loss, 0 = draw, +1 = root player win
-     */
-    static public void updateStats(List<MonteCarloTreeNode> visited, int score) {
-        for (MonteCarloTreeNode node : visited) {
-        	assert node != null : "Null node visited";
-        	assert node.getMove() != null || node.getPly() == rootPly : "Null move";
-        	assert score >= -1 && score <= 1 :
-        		String.format("Score %d out of range at ply %d", score, node.getPly());
-
-        	node.visits++;
-	        int nodeScore = score * node.scoreSign();	// win/loss * winner/loser at this node
-	        node.score += nodeScore;		// See reference [1] above
-//	        if (nodeScore > 0) {			// See reference [2] above
-//		        node.score += nodeScore;
-//		    }
-	        assert node.score <= node.visits :
-	        	String.format("Score (%d) > visits (%d) at ply %d",
-	        		node.score, node.visits, node.getPly());
-	        LOGGER.finer(() -> node.getPly() == rootPly ?
-	        		String.format("Updating stats for root at ply %d: visits=%d, score=%d, nodeScore=%d, total=%d%n",
-			        		node.getPly(), node.visits, score, nodeScore, node.score) :
-	        		String.format("Updating stats for move %s at ply %d: visits=%d, score=%d, nodeScore=%d, total=%d%n",
-	        				node.getMove().toString(), node.getPly(), node.visits, score, nodeScore, node.score) );
-        }
-    }
-
-		/**
-		 * References:
-		 * [1] http://ccg.doc.gold.ac.uk/teaching/ludic_computing/ludic16.pdf
-		 * [2] https://jeffbradberry.com/posts/2015/09/intro-to-monte-carlo-tree-search/
-		 * [3] https://github.com/theKGS/MCTS
-		 * 
-		 * [1] Best move = highest UCT--but why include regret term?
-		 * [2] Best move = highest win percent
-		 * [3] Best move = most visited
-		 * 
-		 * @return principal Variation (moves w/ highest win percent as per [2])
-		 */
-		public Variation getPrincipalVariation() {
-			LOGGER.finer(() -> String.format("Entering %s.getPrincipalVariation%n", CLASS_NAME));
-
-			Variation pvar = newVariation();
-	        MonteCarloTreeNode parent = this;
-	        pvar.setStart(this);
-
-	        while (!parent.isLeaf()) {
-	        	final MonteCarloTreeNode logParent = parent;
-	        	LOGGER.finer(() -> String.format(
-	        			"  Finding best move at ply %d ...%n", logParent.getPly()));
-
-	        	MonteCarloTreeNode bestChild = null;
-		        float bestAvg = Float.NEGATIVE_INFINITY;
-
-		        for (MonteCarloTreeNode child : parent.children) {
-			        assert child.move != null : "Null move at ply %d";
-
-			        LOGGER.finer(() -> String.format(
-			        		"    %s total/visits: %d/%d",
-		        			child.getMove().toString(), child.score, child.visits));
-
-			        if (child.visits == 0) {
-		        		LOGGER.finer("\n");
-		        		continue;	        	
-		        	}
-			        float avgValue =((float) child.score)/child.visits;
-		            LOGGER.finer(() -> String.format(" (%%%.0f)%n", avgValue*100));
-
-		            if (avgValue > bestAvg) {
-		                bestChild = child;
-		                bestAvg = avgValue;
-		            }
-		        }	        
-	
-		        if (bestChild == null) {
-		        	assert pvar.size() > 0 : "getPrincipalVariation failed";
-		        	return pvar;
-		        }
-	
-		        final MonteCarloTreeNode logChild = bestChild;
-		        final float logAvg = bestAvg;
-		        LOGGER.finer(() -> String.format(
-		        		"  ... Best move at ply %d is %s (%%%.0f)%n",
-		        		logParent.getPly(), logChild.getMove().toString(), logAvg*100));
-		        
-		        if (pvar.size() == 0) pvar.setScore((int) Math.round(bestAvg*100));
-	    	    pvar.add(bestChild.move);
-		        parent = bestChild;
-		        assert (pvar.size() <= 6*7) : "Variation size exceeded";
-	        }
-
-	        LOGGER.finer(() -> String.format(
-	        		"Exiting %s.getPrincipalVariation first move %s with score %d at ply %d%n",
-	        		CLASS_NAME, pvar.getMove().toString(), pvar.getScore(), pvar.getStart().getPly() ));
-
-	        return pvar;
-		}
 	
 		/**
 		 * The principal variation is the sequence of moves to the
