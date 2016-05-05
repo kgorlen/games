@@ -1,5 +1,6 @@
 package kgorlen.games.connect4;
 
+import java.util.Random;
 import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -8,7 +9,8 @@ import kgorlen.games.Log;
 import kgorlen.games.Move;
 import kgorlen.games.TreeSearch;
 import kgorlen.games.Variation;
-import kgorlen.games.mcts.MonteCarloTreeSearch;
+import kgorlen.games.mcts.MCTSClassic;
+import kgorlen.games.mcts.MCTSSolver;
 
 
 /**
@@ -17,7 +19,7 @@ import kgorlen.games.mcts.MonteCarloTreeSearch;
  *
  */
 public class Connect4 {
-	static int SEARCH_LIMIT = 1000;		// search limit (iterations)
+	static int SEARCH_LIMIT = 7;		// search limit (iterations)
 	static Scanner Input = new Scanner(System.in);	// Command input stream
 	private static final Logger LOGGER = Log.LOGGER;
 
@@ -54,8 +56,9 @@ public class Connect4 {
 				case "q":  
 					System.exit(0);
 				default:
-					Connect4Move move = p.newMove(Character.toUpperCase(cmd.charAt(0)));
+					Connect4Move move = p.newMove(Character.toLowerCase(cmd.charAt(0)));
 					if (p.isValidMove(move)) {
+						LOGGER.info(String.format("Opponent's move: %s%n", move.toString()));
 						p.makeMove(move);
 						p.print();
 						return;
@@ -95,7 +98,8 @@ public class Connect4 {
 		LOGGER.setLevel(Level.INFO);
 	
 		while (true) {
-			TreeSearch mcts = new MonteCarloTreeSearch();
+//			TreeSearch mcts = new MCTSSolver(new Random(424242424242424247L));  // Fixed seed for debugging);
+			TreeSearch mcts = new MCTSClassic(new Random(424242424242424247L));  // Fixed seed for debugging);
 			Connect4Position root = new Connect4Position();	// Initialize game
 
 			System.out.print("Enter 'x', 'o', 'v', or 'q':");

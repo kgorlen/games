@@ -41,10 +41,10 @@ public interface GamePosition extends Position {
 	 * References:
 	 * 	https://chessprogramming.wikispaces.com/Evaluation
 	 * 
-	 * @return	score of a won GamePosition from Max's point of view
-	 * 			(Max win positive, Min win negative); i.e., if isWin()
-	 * 			is true and Max has moved last, return a positive
-	 * 			score.
+	 * @return	score of a won GamePosition, >0 if Player 1
+	 * 			(e.g. X or White) win, <0 if Player 2 (e.g.
+	 * 			O or Black) win.  Multiply by scoreSign()
+	 * 			for NegaMax score.
 	 */
 	public int scoreWin();
 

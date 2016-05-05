@@ -9,82 +9,46 @@ import java.util.logging.Logger;
 import kgorlen.games.Log;
 import kgorlen.games.Move;
 import kgorlen.games.MoveGenerator;
-import kgorlen.games.Position;
 import kgorlen.games.TreeSearch;
-import kgorlen.games.Variation;
 
 /**
  * @author Keith gorlen@comcast.net
  *
  */
-public class MCTSSolver extends TreeSearch {
+public class MCTSSolver extends MCTS {
 	private static final Logger LOGGER = Log.LOGGER;
 	private static final String CLASS_NAME = TreeSearch.class.getName();
 	
-	private static Random randNum;
-
 	/**
 	 * @param r instance of Random number generator
 	 * @param ttCapacity Transposition HashMap initial capacity
 	 */
 	public MCTSSolver(Random r, int ttCapacity) {
-		super(ttCapacity);
-		randNum = r;
+		super(r,ttCapacity);
 	}
 
 	/**
 	 * @param r instance of Random number generator
 	 */
 	public MCTSSolver(Random r) {
-		super();
-		randNum = r;
+		super(r);
 	}
 
-	/**
-	 * 
-	 */
 	public MCTSSolver() {
 		super();
-		randNum = new Random();
 	}
-	
-	/* (non-Javadoc)
-	 * @see kgorlen.games.TreeSearch#search(kgorlen.games.Position, int)
-	 */
-	@Override
-	public Variation search(Position root, int limit) {
-		assert !((MCTSPosition) root).isWin() && !((MCTSPosition)root).isDraw() :
-			"root is terminal position";
-		setRoot(root);
-		elapsedTime();
 		
-		try {
-			for (int i=0; i < limit; i++) {		// TODO: Change limit to elapsed time
-			search((MCTSPosition) root);
-			}
-		}catch(MCTSSearchException e) {
-			LOGGER.fine(() -> e.toString());
-		}
-
-		elapsedTime();
-		logStatistics(CLASS_NAME);
-		Variation pvar = getPrincipalVariation();
-		Variation.logPrincipalVariation(pvar, CLASS_NAME);
-		return pvar;
-	}
-	
-/*	Reference:
+/*
+ * 	Reference:
  * 	Mark H.M. Winands, Yngvi Bjornsson, and Jahn-Takeshi Saito,
  *  "Monte-Carlo Tree Search Solver"
 
 	Integer MCTSSolver(Node N){
 // Assumes N is not terminal position?
 
-// But need to generate child positions to determine if winner,
-//   and may as well add them to tree.
-		if (playerToMoveWins(N))
+		if (playerToMoveWins(N))	// I.e. at least one child isWin()
 			return INFINITY
-		else (playerToMoveLoses(N))
+		else (playerToMoveLoses(N)) // I.e. N.isWin()
 			return -INFINITY
 
 		bestChild = select(N)
@@ -93,15 +57,14 @@ public class MCTSSolver extends TreeSearch {
 // What if all children are draws?
 		N.visitCount++
 		
-		if (bestChild.value != -INFINITY AND bestChild.value != INFINITY) {
+		if (bestChild.value != -INFINITY AND bestChild.value != INFINITY)
 			if(bestChild.visitCount == 0){
 				R = -playOut(bestChild)
-// See above comment re: adding all children to tree
-				addToTree(bestChild)
+				addToTree(bestChild)	// I.e bestChild.score = R(?); bestChild.visitCount = 1
 				goto DONE
 			} else
 				R = -MCTSSolver(bestChild)  // I.e. R = -INFINITY if playerToMove loses
-		} else
+		else
 			R = bestChild.value	// I.e. +-INFINITY
 
 		if (R == INFINITY){
@@ -128,109 +91,155 @@ public class MCTSSolver extends TreeSearch {
 	}
 */	
 	
-	public int search (MCTSPosition parent) throws MCTSSearchException {
+	public int mcts(MCTSPosition parent, int depth, String indent) throws MCTSSearchException {
+		LOGGER.finer(() -> String.format(
+				"%s{Entering %s.mcts of parent at ply %d with score=%+d, visits=%d:%n%s",
+				indent, CLASS_NAME, parent.getPly(), parent.getScore(), parent.visits, parent.toString(indent) ));
+
+		visited.add(depth, parent);
+		
+		if (parent.isWin()) {
+			// if playerToMoveLoses return -INFINITY
+			LOGGER.finer(() -> String.format(
+					"%s}Exiting %s.mcts, playerToMove lost at ply %d, result=-INFINITY%n",
+					indent, CLASS_NAME, parent.getPly() ));			
+			return -SCORE_INFINITY;
+		}
+
+		if (parent.isDraw()) {
+			assert parent.getScore() == 0 : "Drawn position with non-zero score: " + parent.getScore();
+			LOGGER.finer(() -> String.format("%s}Exiting %s.mcts, draw at ply %d, result=0%n",
+					indent, CLASS_NAME, parent.getPly(), parent.getScore() ));			
+			return 0;
+		}
+		
+		if (parent.children == null) parent.expand(indent);
+
+		final MCTSPosition bestChild = select(parent);
+
+		if (bestChild == null) {	// All children are draws
+			assert parent.getScore() == 0 : String.format(
+					"Drawn position at ply %d with non-zero score %+d, visits=%d%n",
+					parent.getPly(), parent.getScore(), parent.visits);
+
+			for (MCTSPosition child : parent.children) {
+				child.setScore(0);
+				child.visits++;
+			}
+			if (depth == 0) throw new MCTSSearchException("Draw from root position");
+			
+			LOGGER.finer(() -> String.format(
+					"%s}Exiting %s.mcts, all moves at ply %d draw, result=0%n",
+					indent, CLASS_NAME, parent.getPly() ));			
+			return 0;
+		}
+
+		visited.add(depth+1, bestChild);
+		
+		if (bestChild.isWin()) {	// At least one child is win for playerToMove
+			bestChild.setScore(SCORE_INFINITY);
+			bestChild.visits++;
+			parent.setScore(-SCORE_INFINITY);
+			if (depth == 0) throw new MCTSSearchException("Next move from root position is win");
+			
+			// if playerToMoveWins return +INFINITY
+			LOGGER.finer(() -> String.format(
+					"%s}Exiting %s.mcts, playerToMove %s at ply %d wins, result=+INFINITY%n",
+					indent, CLASS_NAME, bestChild.getMove().toString(), parent.getPly() ));
+			return SCORE_INFINITY;
+		}
+
+		LOGGER.finer(() -> String.format(
+				"%sSelected move %s to ply %d with score %+d to position:%n%s",
+				indent, bestChild.getMove().toString(), bestChild.getPly(),
+				bestChild.getScore(), bestChild.toString(indent) ));
+		
+		parent.visits++;
 		int result;
 
-//  if (playerToMoveLoses(N)) return -INFINITY
-		if (parent.isWin()) return -TreeSearch.SCORE_INFINITY;
-
-		if (parent.isDraw()) return parent.scoreSign() * parent.scoreDraw();
-		
-		if (parent.children == null) {
-    		MoveGenerator gen = parent.moveGenerator();		
-    		while (gen.hasNext()) {
-    			Move move = gen.next();
-    			MCTSPosition child = (MCTSPosition) parent.copy();
-    			child.makeMove(move);
-    			parent.addChild(child);
-    		}
-    		assert parent.children != null :
-    			"Failed to generate children of non-terminal position";
-		}
-
-		MCTSPosition bestChild = select(parent);
-		if (bestChild == null) {
-			return parent.scoreSign() * parent.scoreDraw();
-		}
-
-// if (playerToMoveWins(N)) return INFINITY
-		if (bestChild.isWin()) return TreeSearch.SCORE_INFINITY;
-
-		parent.visits++;
-		if (bestChild.score != TreeSearch.SCORE_INFINITY
-				&& bestChild.score != -TreeSearch.SCORE_INFINITY) {
+		if (bestChild.getScore() != SCORE_INFINITY
+				&& bestChild.getScore() != -SCORE_INFINITY) {
+			// Selected child is not proven win or draw
 			if (bestChild.visits == 0) {
-				result = -bestChild.evaluate();
-				parent.score += result;	// parent.computeAverage(score);
+				// Playout from leaf position
+				result = -bestChild.scoreSign() * bestChild.evaluate();
+				bestChild.setScore(-result);
+				bestChild.visits = 1;
+				parent.updateScore(result);		// parent.computeAverage(score);
+				parent.visits++;
+				positionsSearched++;
+				LOGGER.finer(() -> String.format(
+						"%s}Exiting %s.mcts, move %s to ply %d playout result=%+d, parent score=%+d%n",
+						indent, CLASS_NAME, bestChild.getMove().toString(), bestChild.getPly(),
+						bestChild.getScore(), parent.getScore()));
 				return result;
 
 			} else {
-				result = search(bestChild);
+				LOGGER.finer(() -> String.format(
+						"%sSearching move %s to ply %d with score %+d...%n",
+						indent, bestChild.getMove().toString(), bestChild.getPly(), bestChild.getScore() ));
+				final int searchResult = result = -mcts(bestChild, depth+1, indent+"  ");	// I.e. result = <0 if playerToMove losing
+				LOGGER.finer(() -> String.format(
+						"%s...Search of move %s to ply %d result=%+d%n",
+						indent, bestChild.getMove().toString(), bestChild.getPly(), searchResult ));				
 			}
 		} else {
-			result = bestChild.score;
+			// Selected child is proven win or loss
+			result = getScore();	// I.e. +-INFINITY
 		}
 		
-		if (result == TreeSearch.SCORE_INFINITY) {
-			parent.score = -TreeSearch.SCORE_INFINITY;
-			return result;
-		} if (result == -TreeSearch.SCORE_INFINITY) {
+		if (result == SCORE_INFINITY) {  // playerToMove wins: mcts() returned -INFINITY
+			parent.setScore(-SCORE_INFINITY);
+			if (depth == 0) throw new MCTSSearchException("Win from root position");
+			
+			LOGGER.finer(() -> String.format(
+					"%s}Exiting %s.mcts, move %s to ply %d result=+INFINITY (at least one move wins), parent score=-INFINITY%n",
+					indent, CLASS_NAME, bestChild.getMove().toString(), bestChild.getPly() ));
+			return SCORE_INFINITY;
+		}
+		
+		if (result == -SCORE_INFINITY) {// playerToMove loses--mcts() returned +INFINITY
 			for (MCTSPosition child : parent.children) {
-				if (child.score != -TreeSearch.SCORE_INFINITY) {
-					result = -1;
-					break;
+				assert child.visits != 0 : "mcts() returned +INFINITY for partially evaluated position";
+				if (child.getScore() != -SCORE_INFINITY) {
+					parent.updateScore(-1);	// parent.computeAverage(score);
+					LOGGER.finer(() -> String.format(
+							"%s}Exiting %s.mcts, move %s to ply %d result=-1 (at least one move not loss), parent score=%+d%n",
+							indent, CLASS_NAME, bestChild.getMove().toString(), bestChild.getPly(), parent.getScore() ));
+					return -1;			// At least one child is not loss for playerToMove
 				}
 			}
 			
-			parent.score = TreeSearch.SCORE_INFINITY;
-			return result;
+			parent.setScore(SCORE_INFINITY);
+			if (depth == 0) throw new MCTSSearchException("Loss from root position");
+			
+			LOGGER.finer(() -> String.format(
+					"%s}Exiting %s.mcts, move %s to ply %d result=-INFINITY (all moves lose), parent score=+INFINITY%n",
+					indent, CLASS_NAME, bestChild.getMove().toString(), bestChild.getPly() ));
+			return -SCORE_INFINITY;	// All children are losses for playerToMove
 		}
 
-		assert result > -TreeSearch.SCORE_INFINITY && result < TreeSearch.SCORE_INFINITY :
+		assert result > -SCORE_INFINITY && result < SCORE_INFINITY :
 			"Score out of range: " + result;
-		parent.score += result;	// parent.computeAverage(score);
+		parent.updateScore(result);	// parent.computeAverage(score);
+		LOGGER.finer(() -> String.format(
+				"%s}Exiting %s.mcts, move %s to ply %d result=%+d, parent score=%d%n",
+				indent, CLASS_NAME, bestChild.getMove().toString(), bestChild.getPly(), result, parent.getScore()));
 		return result;
 	}
 
 	/**
-     * Select child node to expand
-     * 
-     * References:
-     *   http://mcts.ai/code/java.html
-     *   http://scalab.uc3m.es/~seminarios/seminar11/slides/lucas2.pdf
-     * 
-     * EPSILON small random number 0-EPSILON to break ties in unexpanded nodes,
-     * i.e. when visits = 0.  1/EPSILON > SCORE_INFINITY
-     * 
-     * @param visited list of nodes visited from root to this node
-     * @param debug switch
-     * @return node to expand, or null if all children draws
-     */
-    private static final double C = Math.sqrt(2);	// Upper confidence bound for Trees (UCT) coefficient
-    private static final double EPSILON = 1.0/(10.0*TreeSearch.SCORE_INFINITY);
+	 * References:
+	 * http://www.ru.is/faculty/yngvi/pdf/WinandsBS08.pdf,
+	 *   p.32, "Final Move Selection"
+	 * 
+	 * @param child position
+	 * @return "secure child" value of position
+	 */
+    @Override
+    double pvScore(MCTSPosition child) {
+		final double A = 1.0;
+		return child.getScore() + A/Math.sqrt(child.visits);
+	}
 
-    public MCTSPosition select(MCTSPosition parent) {
-        MCTSPosition selected = null;
-        double bestValue = Double.MIN_VALUE;
-        for (MCTSPosition c : parent.children) {
-        	if (c.isWin()) {
-        		c.score = -TreeSearch.SCORE_INFINITY;
-        		return c;
-        	}
-        	if (c.isDraw()) {
-        		c.score = c.scoreSign() * c.scoreDraw();
-        		continue;
-        	}
-            double uctValue =
-                    c.score / (c.visits + EPSILON) +
-                            C * Math.sqrt(Math.log(parent.visits+1) / (c.visits + EPSILON)) +
-                            randNum.nextDouble() * EPSILON;
-            if (uctValue > bestValue) {
-                selected = c;
-                bestValue = uctValue;
-            }
-        }
-        return selected;
-    }
-	
 }

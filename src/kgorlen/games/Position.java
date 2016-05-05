@@ -42,9 +42,9 @@ public interface Position {
 	public void makeMove(Move m);
 
 	/**
-	 * Evaluate a quiescent position.
+	 * Evaluate a position.
 	 * 
-	 * @return	throws unchecked RuntimeException
+	 * @return Position score
 	 */
 	public int evaluate();
 
@@ -112,7 +112,7 @@ public interface Position {
 	public boolean equals(Object p);
 
 	/**
-	 * @return +1 if Max to move, -1 if Min to move
+	 * @return +1 if Player 1 (X) to move, -1 if Player 2 (O) to move
 	 */
 	public int scoreSign();
 

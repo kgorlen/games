@@ -8,7 +8,8 @@ import kgorlen.games.Move;
 import kgorlen.games.MoveGenerator;
 import kgorlen.games.TTEntry;
 import kgorlen.games.Variation;
-import kgorlen.games.mcts.MonteCarloTreeNode;
+import kgorlen.games.mcts.MCTSPosition;
+import kgorlen.games.mcts.MCTSSolver;
 
 /**
  * Represents a Connect Four GamePosition using a 2-element array of
@@ -41,7 +42,7 @@ import kgorlen.games.mcts.MonteCarloTreeNode;
  *
  */
 
-public class Connect4Position extends MonteCarloTreeNode {
+public class Connect4Position extends MCTSPosition {
 	public static final int ROWS = 6;	// max 7
 	public static final int COLS = 7;	// max 8
 
@@ -49,8 +50,8 @@ public class Connect4Position extends MonteCarloTreeNode {
     private static final long colMask =       0x3f3f3f3f3f3f3fL; 	// Mask for column bits
     private static final long bottomRowMask = 0x01010101010101L;	// Mask for bits in first row
 
-    private long[] board;	// Mask for cells occupied by black (board[0]) and red (board[1])
-    private int ply;		// Number of moves; black moves first
+    private long[] board;	// Mask for cells occupied by black (X, board[0]) and red (O, board[1])
+    private int ply;		// Number of moves; black (X) moves first
     
 	/**
 	 * Construct initial (empty) board position.
@@ -108,15 +109,16 @@ public class Connect4Position extends MonteCarloTreeNode {
     }
     
 	/**
-	 * Formats the specified row as a string of seven characters:
-	 * 'X', 'O', or '.' if the square is empty.
+	 * Formats the specified row as a string:
+	 * 'X|', 'O|', or ' |' if the square is empty.
 	 * 
 	 * @param row	index of row to format, range 1-ROWS
 	 * @return		seven-character string
 	 */
+    @Override
 	public String rowToString(int row) {
 		StringBuilder s = new StringBuilder("|");
-	    for (long m = 1L<<((COLS-1)*8+(ROWS-row)); m > 0; m >>= 8) {
+	    for (long m = 1L<<((COLS-1)*8+(row-1)); m > 0; m >>= 8) {
 			if ((board[0] & m) != 0) s.append("X|");
 			else if ((board[1] & m) != 0) s.append("O|");
 			else s.append(" |");
@@ -130,10 +132,10 @@ public class Connect4Position extends MonteCarloTreeNode {
     @Override
     public String toString(String indent) {
     	StringBuilder s = new StringBuilder();
-		for (int i=1; i<=ROWS; i++) {
+		for (int i=ROWS; i>0; i--) {
 		    s.append(indent + i + rowToString(i) + "\n");
 	    }
-		s.append(indent + "  A B C D E F G\n");
+		s.append(indent + "  a b c d e f g\n");
 		return s.toString();
 	}
 
@@ -200,8 +202,14 @@ public class Connect4Position extends MonteCarloTreeNode {
      */
     static final int[] dirShift = { 1, 7, 8, 9 };  // shifts for | / - \
 
+    static Connect4Move winmove = new Connect4Move("a1");	// TODO: remove after debugging
+    
 	@Override
     public boolean isWin() {
+//		if (ply == 3 && !winmove.equals(MCTSSolver.visited.get(1).getMove())) {
+//			return true;	// TODO: remove after testing
+//		}
+		
 		if (ply < 7) return false;	// Win requires at least 7 moves
    	
 		long m;			// mask for cells occupied by player last moved
@@ -211,9 +219,10 @@ public class Connect4Position extends MonteCarloTreeNode {
 		    if (m == 0) continue;
 		    m &= m << dirShift[direction];
 		    if (m == 0) continue;
+//		    if ((ply & 1) == 0) return true;	// TODO: for testing O needs only 3 in row
 		    m &= m << dirShift[direction];
 		    if (m != 0) {
-		    	LOGGER.finest(() -> String.format("Win for %s at ply %d%n",
+		    	LOGGER.finest(() -> String.format("isWin() for %s at ply %d%n",
 		    			((ply & 1) != 0) ? "X" : "O", getPly() ));
 		    	return true;
 		    }
@@ -253,26 +262,31 @@ public class Connect4Position extends MonteCarloTreeNode {
 
 	/* (non-Javadoc)
 	 * 
-	 * @return 1 = AI, else -1
+	 * @return 1 = X, else -1
 	 */
 	@Override
 	public int scoreSign() {
-		assert AISide != 0 : "setAISide() not called";
-		return AISide * (1 - (~ply<<1 & 2));
+		return (ply & 1) == 1 ? +1 : -1;
+//		return 1 - (~ply<<1 & 2);	TODO: is this faster?
 	}
 
 	@Override
 	public boolean isDraw() {
-		return ply == ROWS*COLS;
+		if (ply < ROWS*COLS) return false;
+    	LOGGER.finest(() -> String.format("Draw at ply %d%n",
+    			((ply & 1) != 0) ? "X" : "O", ply ));
+		return true;
 	}
 
 	/**
-	 * @return	score of a won GamePosition from machine's point of view
-	 * 			(AI win = +1, AI loss = -1).
+	 * @return	score of a won GamePosition from X's point of view
+	 * 			(X win = 1, O win = -1); i.e., if isWin()
+	 * 			is true and X has moved last, return 1.
 	 */
 	@Override
 	public int scoreWin() {
-		return scoreSign();
+		return (ply & 1) == 1 ? +1 : -1;
+//		return 1 - (~ply<<1 & 2);	TODO: is this faster?
 	}
 
 	@Override
@@ -283,18 +297,18 @@ public class Connect4Position extends MonteCarloTreeNode {
 	/**
 	 * Convert column letter to a move bitmask
 	 * 
-	 * @param col column letter A-G
+	 * @param col column letter a-g
 	 * @return move bitmask, or 0 if illegal move
 	 */
 	public long columnMove(char letter) {
-		return (letter < 'A' || letter > 'G') ? 0
-				: ((1L<<ROWS)-1)<<(COLS-(letter-'A')-1<<3) & moves();
+		return (letter < 'a' || letter > 'g') ? 0
+				: ((1L<<ROWS)-1)<<(COLS-(letter-'a')-1<<3) & moves();
 	}
 
 	/**
 	 * Convert column letter to a Connect4Move
 	 * 
-	 * @param col column letter A-G
+	 * @param col column letter a-g
 	 */
 	public Connect4Move newMove(char letter) {
 		return new Connect4Move(columnMove(letter));
