@@ -28,6 +28,11 @@ public interface GamePosition extends Position {
 	public String sideToMove();
 
 	/**
+	 * @return name of side last moved, e.g. 'X' or 'O'
+	 */
+	public String sideLastMoved();
+
+	/**
      * @return	<code>true</code> if last move resulted in a win
      */
     public boolean isWin();

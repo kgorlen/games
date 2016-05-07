@@ -152,7 +152,7 @@ public abstract class MCTSPosition implements GamePosition {
 					final int winScore = child.scoreWin();
 					LOGGER.finer(() -> String.format(
 							"Playout move %s to ply %d is win by %s, score %+d:%n%s",
-							move.toString(), child.getPly(), p.sideToMove(), winScore,
+							move.toString(), child.getPly(), child.sideLastMoved(), winScore,
 							child.toString() ));
 					return winScore;
 				}
@@ -165,13 +165,13 @@ public abstract class MCTSPosition implements GamePosition {
 
 			LOGGER.finest(() -> String.format(
 					"%s playing move %s to ply %d...%n%s",
-					p.sideToMove(), child.getMove().toString(), child.getPly(), child.toString() ));
+					child.sideLastMoved(), child.getMove().toString(), child.getPly(), child.toString() ));
 
 			if (child.isDraw()) {
 				final int drawScore = this.scoreSign() * child.scoreDraw();
 				LOGGER.finer(() -> String.format(
 						"Playout move %s to ply %d by %s is draw, score %+d:%n%s",
-						child.getMove().toString(), child.getPly(), p.sideToMove(), drawScore,
+						child.getMove().toString(), child.getPly(), child.sideLastMoved(), drawScore,
 						child.toString() ));
 				return drawScore;
 			}

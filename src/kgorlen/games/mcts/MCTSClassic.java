@@ -6,8 +6,6 @@ import java.util.Random;
 import java.util.logging.Logger;
 
 import kgorlen.games.Log;
-import kgorlen.games.Move;
-import kgorlen.games.MoveGenerator;
 
 /**
  * @author Keith gorlen@comcast.net
@@ -24,11 +22,27 @@ public class MCTSClassic extends MCTS {
 	private static final String CLASS_NAME = MCTSClassic.class.getName();
 
 	/**
+	 * @param c Upper Confidence Bounds for Trees (UCT) coefficient
 	 * @param r instance of Random number generator
 	 * @param ttCapacity Transposition HashMap initial capacity
 	 */
-	public MCTSClassic(Random r, int ttCapacity) {
-		super(r,ttCapacity);
+	public MCTSClassic(double c, Random r, int ttCapacity) {
+		super(c, r, ttCapacity);
+	}
+
+	/**
+	 * @param c Upper Confidence Bounds for Trees (UCT) coefficient
+	 * @param r instance of Random number generator
+	 */
+	public MCTSClassic(double c, Random r) {
+		super(c, r);
+	}
+
+	/**
+	 * @param c Upper Confidence Bounds for Trees (UCT) coefficient
+	 */
+	public MCTSClassic(double c) {
+		super(c);
 	}
 
 	/**
@@ -57,17 +71,17 @@ public class MCTSClassic extends MCTS {
         while (parent.children != null) {
         	child = select(parent);
 
-        	final MCTSPosition p = parent;
         	final MCTSPosition c = child;
         	
-        	if (child == null) {	// all children draws
-            	LOGGER.finer(() -> String.format("  All moves from ply %d draw, cannot expand%n",
-            			p.getPly(), p.toString("  ") ));
-        		break;    		
-        	}
+//        	final MCTSPosition p = parent;
+//        	if (child == null) {	// all children draws
+//            	LOGGER.finer(() -> String.format("  All moves from ply %d draw, cannot expand%n",
+//            			p.getPly(), p.toString("  ") ));
+//        		break;    		
+//        	}
         	if (child.isWin()) {	// one child is win
             	LOGGER.finer(() -> String.format("  Move %s to ply %d is win by %s, cannot expand%n",
-            			c.getMove().toString(), c.getPly(), p.sideToMove() ));
+            			c.getMove().toString(), c.getPly(), c.sideLastMoved() ));
         		break;			
         	}
 
@@ -82,50 +96,54 @@ public class MCTSClassic extends MCTS {
 
         final MCTSPosition bestParent = parent;
         
+
+// Expand selected leaf position
         if (bestParent.children == null) {	// parent is non-terminal leaf
         	bestParent.expand();
         	child = select(bestParent);
         }
 
         final MCTSPosition bestChild = child;
+		visited.add(bestChild);
         
-        if (bestChild == null) { 		// all children draws
-    		for (MCTSPosition draw : bestParent.children) {
-    			visited.add(draw);
-    		}
-    		updateStats(visited, 0);
-    		if (depth == 0)
-				throw new MCTSSearchException("Draw from root position");
-			
-			LOGGER.finer(() -> String.format(
-					"}Exiting %s.mcts, all moves from ply %d draw, result=0%n",
-					CLASS_NAME, bestParent.getPly() ));			
-			return 0;
-        }
-
     	if (bestChild.isWin()) {
-    		visited.add(bestChild);
     		updateStats(visited, bestChild.scoreWin());
-    		if (depth == 0)
-    			throw new MCTSSearchException("Win from root position");
-
     		LOGGER.finer(() -> String.format(
-					"}Exiting %s.mcts, move %s to ply %d is win, result=%d%n",
+					"}Exiting %s.mcts, move %s to ply %d is win by %s, result=%d%n",
 					CLASS_NAME, bestChild.getMove().toString(), bestChild.getPly(),
-					root.scoreSign() * bestChild.scoreWin() ));			
+					bestChild.sideLastMoved(), root.scoreSign() * bestChild.scoreWin() ));			
+
+    		if (depth == 0)
+    			throw new MCTSSearchException("Next move from root position is win");
+
     		return root.scoreSign() * bestChild.scoreWin();
     	}
         
+        if (bestChild.isDraw()) { 		// selected child is draw
+    		updateStats(visited, 0);
+			LOGGER.finer(() -> String.format(
+					"}Exiting %s.mcts, all moves from ply %d draw, result=0%n",
+					CLASS_NAME, bestParent.getPly() ));			
+
+			if (depth == 0) {
+				for (MCTSPosition c : bestParent.children) {
+					if (!c.isDraw()) return 0;						
+				}
+				throw new MCTSSearchException("All moves from root position draw");
+			}
+			
+			return 0;
+        }
+
 // Simulate: Play out (random) moves until win/loss/draw       
-        visited.add(bestChild);
-        int score = bestChild.evaluate();
+        final int score = bestChild.evaluate();
         positionsSearched++;
         
 // Update: Update statistics for visited nodes with playout results      
         updateStats(visited, score);
 		LOGGER.finer(() -> String.format(
 				"}Exiting %s.mcts, playout result=%d%n",
-				CLASS_NAME, root.scoreSign() * bestChild.scoreWin() ));			
+				CLASS_NAME, root.scoreSign() * score ));			
         return root.scoreSign() * score;
 	}
 
@@ -147,15 +165,15 @@ public class MCTSClassic extends MCTS {
 		for (MCTSPosition node : visited) {
 			node.visits++;
 			int nodeScore = score * node.scoreSign();
-			node.updateScore(nodeScore);		// See reference [1] above
-			//	        if (nodeScore > 0) {			// See reference [2] above
-			//		        node.score += nodeScore;
-			//		    }
+			node.updateScore(nodeScore);	// See reference [1] above
+//	        if (nodeScore > 0) {			// See reference [2] above
+//		        node.score += nodeScore;
+//		    }
 			LOGGER.finer(() -> node.getMove() == null ?
-					String.format("Updating stats at root ply %d: visits=%d, score=%d, nodeScore=%d, total=%d%n",
-							node.getPly(), node.visits, score, nodeScore, node.getScore() ) :
-					String.format("Updating stats for move %s to ply %d: visits=%d, score=%d, nodeScore=%d, total=%d%n",
-							node.getMove().toString(), node.getPly(), node.visits, score, nodeScore, node.getScore() ));
+					String.format("Updating stats at root ply %d: score=%+d*%+d, total/visits=%+d/%d%n",
+							node.getPly(), node.scoreSign(), score, node.getScore(), node.visits ) :
+					String.format("Updating stats for move %s to ply %d: score=%+d*%+d, total/visits=%+d/%d%n",
+							node.getMove().toString(), node.getPly(), node.scoreSign(), score, node.getScore(), node.visits ));
 		}
 	}
 	

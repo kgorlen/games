@@ -82,7 +82,7 @@ public class TicTacToe {
 	 */
 	static boolean isGameOver(TicTacToePosition p) {	// Test and announce game over
 		if (p.isWin()) {
-			System.out.println((p.sideToMove() == "X") ? "O wins!" : "X wins!");
+			System.out.println(p.sideLastMoved() + " wins!");
 			return true;
 		}
 		if (p.isDraw()) {

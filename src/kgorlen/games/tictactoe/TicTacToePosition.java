@@ -71,26 +71,38 @@ public class TicTacToePosition implements GamePosition {
  * 
  */
 	
+	/* (non-Javadoc)
+	 * @see kgorlen.games.Position#getPly()
+	 */
+	@Override
 	public final int getPly() { 		// Return number moves made
 		return ply;
     }
 
+	/* (non-Javadoc)
+	 * @see kgorlen.games.GamePosition#sideToMove()
+	 */
+	@Override
 	public final String sideToMove() { 	// Return 0 = X, 1 = O
 		return ((ply & 1) == 0) ? "X" : "O";
     }
 
+	/* (non-Javadoc)
+	 * @see kgorlen.games.GamePosition#sideLastMoved()
+	 */
+	@Override
+	public final String sideLastMoved() { 	// Return 0 = X, 1 = O
+		return ((ply & 1) != 0) ? "X" : "O";
+    }
+
+	/* (non-Javadoc)
+	 * @see kgorlen.games.Position#scoreSign()
+	 */
+	@Override
 	public final int scoreSign() { 	// Return 1 = X, -1 = O
 		return ((ply & 1) == 0) ? 1 : -1;
     }
 	
-	public final int numEmpty()	{	// Return number of empty squares
-		return 9 - ply;
-	}
-	
-	public final short occupied() {	// Return mask of all occupied squares
-		return (short) (board[0] | board[1]);
-    }
-    
 	/**
 	 * @return mask of squares occupied by side on move
 	 */
@@ -105,9 +117,20 @@ public class TicTacToePosition implements GamePosition {
 		return (short) board[~ply & 1];
     }
     
-	public final short empty()	{	// Return mask of empty squares
+	/**
+	 * @return mask of empty squares
+	 */
+	public final short empty()	{
 		return (short) (~(board[0] | board[1]) & 0x777);
     }
+
+	/* (non-Javadoc)
+	 * @see kgorlen.games.Position#isValidMove(kgorlen.games.Move)
+	 */
+	@Override
+	public boolean isValidMove(Move mv) {
+		return isValidMove(((TicTacToeMove)mv).toShort());
+	}
 
 	/**
 	 * Check specified move for validity.
@@ -115,10 +138,6 @@ public class TicTacToePosition implements GamePosition {
 	 * @param mv	bitmask of move
 	 * @return		true if move is valid; otherwise false
 	 */
-	public boolean isValidMove(Move mv) {
-		return isValidMove(((TicTacToeMove)mv).toShort());
-	}
-
 	public boolean isValidMove(short mv) {
 		// one bit set for an empty square
 		return (mv & (mv-1)) == 0 && (empty() & mv) != 0;
@@ -148,6 +167,7 @@ public class TicTacToePosition implements GamePosition {
 	/**
      * @return	true if last move made 3-in-a-row
      */
+	@Override
     public boolean isWin() {
 		if (ply < 5) return false;	// Win requires at least 5 moves
 	
@@ -165,6 +185,7 @@ public class TicTacToePosition implements GamePosition {
     /**
 	 * @return	<code>true</code> if this GamePosition is a draw
 	 */
+	@Override
 	public boolean isDraw() {	// Return true if draw
 		if (ply == 9) return true;	// All squares filled
 /*
@@ -195,6 +216,7 @@ public class TicTacToePosition implements GamePosition {
 	 * 			is true and X has moved last, return a positive
 	 * 			score.
 	 */
+	@Override
 	public int scoreWin() {
 		return ((ply&1) != 0) ? (10-ply) : -(10-ply);
 	}
@@ -204,6 +226,7 @@ public class TicTacToePosition implements GamePosition {
 	 *
 	 * @return	score of drawn game, currently always 0
 	 */
+	@Override
 	public int scoreDraw() {
 		return 0;
 	}
@@ -220,21 +243,33 @@ public class TicTacToePosition implements GamePosition {
 		throw new RuntimeException("Not implemented");
 	}
 	
+	/* (non-Javadoc)
+	 * @see kgorlen.games.Position#moveGenerator(kgorlen.games.Move[])
+	 */
 	@Override
 	public MoveGenerator moveGenerator(Move[] killers) {
 		return new TicTacToeMoveGenerator(this, killers);
 	}
 
+	/* (non-Javadoc)
+	 * @see kgorlen.games.Position#moveGenerator()
+	 */
 	@Override
 	public TicTacToeMoveGenerator moveGenerator() {
 		return new TicTacToeMoveGenerator(this, new Move[0]);
 	}
 	
+	/* (non-Javadoc)
+	 * @see kgorlen.games.Position#newVariation()
+	 */
 	@Override
 	public TicTacToeVariation newVariation() {
 		return new TicTacToeVariation(this);
 	}
 	
+	/* (non-Javadoc)
+	 * @see kgorlen.games.Position#newVariation(int)
+	 */
 	@Override
 	public TicTacToeVariation newVariation(int score) {
 		return new TicTacToeVariation(this, score);

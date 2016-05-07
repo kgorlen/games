@@ -19,7 +19,7 @@ import kgorlen.games.mcts.MCTSSolver;
  *
  */
 public class Connect4 {
-	static int SEARCH_LIMIT = 7;		// search limit (iterations)
+	static int SEARCH_LIMIT = 1000;		// search limit (iterations)
 	static Scanner Input = new Scanner(System.in);	// Command input stream
 	private static final Logger LOGGER = Log.LOGGER;
 
@@ -27,7 +27,7 @@ public class Connect4 {
 	 * Step debug log level
 	 */
 	static void stepDebug() {
-		String levels[] = {/*"OFF", "SEVERE",*/ "WARNING", "INFO", /*"CONFIG",*/ "FINE", "FINER", "FINEST"/*, "ALL"*/};
+		String levels[] = {/*"OFF", "SEVERE",*/ "WARNING", /*"INFO",*/ "CONFIG", "FINE", "FINER", "FINEST"/*, "ALL"*/};
 		String current = LOGGER.getLevel().toString();
 		for (int i=0; i<levels.length; i++) {
 			if (current == levels[i]) {
@@ -79,7 +79,7 @@ public class Connect4 {
 	 */
 	static boolean isGameOver(Connect4Position p) {	// Test and announce game over
 		if (p.isWin()) {
-			System.out.println((p.sideToMove() == "X") ? "O wins!" : "X wins!");
+			System.out.println(p.sideLastMoved() + " wins!");
 			return true;
 		}
 		if (p.isDraw()) {
@@ -95,11 +95,11 @@ public class Connect4 {
 	 * @param args none
 	 */
 	public static void main(String []args){
-		LOGGER.setLevel(Level.INFO);
+		LOGGER.setLevel(Level.CONFIG);
 	
 		while (true) {
-//			TreeSearch mcts = new MCTSSolver(new Random(424242424242424247L));  // Fixed seed for debugging);
-			TreeSearch mcts = new MCTSClassic(new Random(424242424242424247L));  // Fixed seed for debugging);
+			TreeSearch mcts = new MCTSSolver(4.0, new Random(424242424242424247L));  // Fixed seed for debugging);
+//			TreeSearch mcts = new MCTSClassic(new Random(424242424242424247L));  // Fixed seed for debugging);
 			Connect4Position root = new Connect4Position();	// Initialize game
 
 			System.out.print("Enter 'x', 'o', 'v', or 'q':");

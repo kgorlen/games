@@ -8,6 +8,8 @@ import kgorlen.games.Move;
 import kgorlen.games.MoveGenerator;
 import kgorlen.games.TTEntry;
 import kgorlen.games.Variation;
+import kgorlen.games.mcts.MCTS;
+import kgorlen.games.mcts.MCTSClassic;
 import kgorlen.games.mcts.MCTSPosition;
 import kgorlen.games.mcts.MCTSSolver;
 
@@ -47,6 +49,7 @@ public class Connect4Position extends MCTSPosition {
 	public static final int COLS = 7;	// max 8
 
 	private static final Logger LOGGER = Log.LOGGER;
+	private static final String CLASS_NAME = MCTS.class.getName();
     private static final long colMask =       0x3f3f3f3f3f3f3fL; 	// Mask for column bits
     private static final long bottomRowMask = 0x01010101010101L;	// Mask for bits in first row
 
@@ -96,11 +99,25 @@ public class Connect4Position extends MCTSPosition {
 		return ((ply & 1) == 0) ? "X" : "O";
     }
 
-	public final long occupied() {	// Return mask of occupied squares
+    /* (non-Javadoc)
+     * @see kgorlen.games.GamePosition#sideLastMoved()
+     */
+    @Override
+    public final String sideLastMoved() { 	// Return 0 = X (black), 1 = O (red)
+		return ((ply & 1) != 0) ? "X" : "O";
+    }
+
+	/**
+	 * @return mask of occupied squares
+	 */
+	public final long occupied() {
 		return (board[0] | board[1]);
     }
     
-	public final long empty()	{	// Return mask of empty squares
+	/**
+	 * @return mask of empty squares
+	 */
+	public final long empty() {
 		return (~(board[0] | board[1]) & colMask);
     }
 	
@@ -204,10 +221,33 @@ public class Connect4Position extends MCTSPosition {
 
     static Connect4Move winmove = new Connect4Move("a1");	// TODO: remove after debugging
     
+	/* (non-Javadoc)
+	 * @see kgorlen.games.mcts.MCTSPosition#isWin()
+	 */
 	@Override
     public boolean isWin() {
-//		if (ply == 3 && !winmove.equals(MCTSSolver.visited.get(1).getMove())) {
-//			return true;	// TODO: remove after testing
+//		if (ply == 1) {
+//			 return true;	// TODO: test Next move from root position is win
+//		}
+		
+//		if (ply == 2) {
+//			return true;	// TODO: test PlayerToMove loses
+//		}
+
+//		if (ply == 3) {
+//			 return true;	// TODO: test deep win by root
+//		}
+
+//		if (ply == 4) {
+//			 return true;	// TODO: test deep loss by root
+//		}
+
+//		if (ply == 3 && winmove.equals(MCTSSolver.visited.get(1).getMove())) {
+//			return true;	// TODO: test find X winmove
+//		}
+
+//		if (ply == 4 && winmove.equals(MCTSSolver.visited.get(1).getMove())) {
+//			return true;	// TODO: test find O winmove
 //		}
 		
 		if (ply < 7) return false;	// Win requires at least 7 moves
@@ -219,42 +259,73 @@ public class Connect4Position extends MCTSPosition {
 		    if (m == 0) continue;
 		    m &= m << dirShift[direction];
 		    if (m == 0) continue;
-//		    if ((ply & 1) == 0) return true;	// TODO: for testing O needs only 3 in row
 		    m &= m << dirShift[direction];
 		    if (m != 0) {
-		    	LOGGER.finest(() -> String.format("isWin() for %s at ply %d%n",
-		    			((ply & 1) != 0) ? "X" : "O", getPly() ));
+		    	LOGGER.finest(() -> String.format("%s.isWin by %s at ply %d%n",
+		    			CLASS_NAME, sideLastMoved(), getPly() ));
 		    	return true;
 		    }
 		}
 		return false;
     }
 
+	/* (non-Javadoc)
+	 * @see kgorlen.games.mcts.MCTSPosition#isDraw()
+	 */
+	@Override
+	public boolean isDraw() {
+//		if (ply == 1) {
+//			return true;	// TODO: test All moves from root position draw
+//		}
+
+		if (ply < ROWS*COLS) return false;
+    	LOGGER.finest(() -> String.format("Draw at ply %d%n", ply));
+		return true;
+	}
+
+	/* (non-Javadoc)
+	 * @see kgorlen.games.mcts.MCTSPosition#newTTentry(int, int, kgorlen.games.Move)
+	 */
 	@Override
 	public TTEntry newTTentry(int depth, int score, Move bestMove) {
 		return new Connect4TTEntry(depth, score, (Connect4Move) bestMove);
 	}
 
+	/* (non-Javadoc)
+	 * @see kgorlen.games.mcts.MCTSPosition#getPly()
+	 */
 	@Override
-	public int getPly() {
+	public final int getPly() {
 		return ply;
 	}
 
+	/* (non-Javadoc)
+	 * @see kgorlen.games.mcts.MCTSPosition#isValidMove(kgorlen.games.Move)
+	 */
 	@Override
 	public boolean isValidMove(Move m) {
 		return isValidMove(((Connect4Move) m).toLong());
 	}
 
+	/* (non-Javadoc)
+	 * @see kgorlen.games.mcts.MCTSPosition#moveGenerator()
+	 */
 	@Override
 	public MoveGenerator moveGenerator() {
 		return new Connect4MoveGenerator(this);
 	}
 
+	/* (non-Javadoc)
+	 * @see kgorlen.games.mcts.MCTSPosition#newVariation()
+	 */
 	@Override
 	public Variation newVariation() {
 		return new Connect4Variation(this);
 	}
 
+	/* (non-Javadoc)
+	 * @see kgorlen.games.Position#newVariation(int)
+	 */
 	@Override
 	public Variation newVariation(int score) {
 		return new Connect4Variation(this, score);
@@ -265,17 +336,9 @@ public class Connect4Position extends MCTSPosition {
 	 * @return 1 = X, else -1
 	 */
 	@Override
-	public int scoreSign() {
+	public final int scoreSign() {
 		return (ply & 1) == 1 ? +1 : -1;
 //		return 1 - (~ply<<1 & 2);	TODO: is this faster?
-	}
-
-	@Override
-	public boolean isDraw() {
-		if (ply < ROWS*COLS) return false;
-    	LOGGER.finest(() -> String.format("Draw at ply %d%n",
-    			((ply & 1) != 0) ? "X" : "O", ply ));
-		return true;
 	}
 
 	/**

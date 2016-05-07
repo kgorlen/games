@@ -13,15 +13,28 @@ public abstract class MCTS extends TreeSearch {
 	private static final Logger LOGGER = Log.LOGGER;
 	private static final String CLASS_NAME = MCTS.class.getName();
 
+	protected double uctC;	// Upper Confidence Bounds for Trees (UCT) coefficient
 	static Random randGen;
 	public static ArrayList<MCTSPosition> visited;	// TODO: remove after tested
 
 	/**
+	 * @param c Upper Confidence Bounds for Trees (UCT) coefficient
 	 * @param r instance of Random number generator
 	 * @param ttCapacity Transposition HashMap initial capacity
 	 */
-	public MCTS(Random r, int ttCapacity) {
+	public MCTS(double c, Random r, int ttCapacity) {
 		super(ttCapacity);
+		uctC = c;
+		randGen = r;
+	}
+
+	/**
+	 * @param c Upper Confidence Bounds for Trees (UCT) coefficient
+	 * @param r instance of Random number generator
+	 */
+	public MCTS(double c, Random r) {
+		super();
+		uctC = c;
 		randGen = r;
 	}
 
@@ -30,11 +43,22 @@ public abstract class MCTS extends TreeSearch {
 	 */
 	public MCTS(Random r) {
 		super();
+		uctC = Math.sqrt(2.0);
 		randGen = r;
+	}
+
+	/**
+	 * @param c Upper Confidence Bounds for Trees (UCT) coefficient
+	 */
+	public MCTS(double c) {
+		super();
+		uctC = c;
+		randGen = new Random();
 	}
 
 	public MCTS() {
 		super();
+		uctC = Math.sqrt(2.0);
 		randGen = new Random();
 	}
 
@@ -45,20 +69,19 @@ public abstract class MCTS extends TreeSearch {
 	public Variation search(Position root, int limit) {
 		assert !((MCTSPosition) root).isWin() && !((MCTSPosition)root).isDraw() :
 			"root is terminal position";
-		LOGGER.config(String.format("%s.search limit=%d%n",
-				CLASS_NAME, limit));
-		// TODO: log UCT C
+		LOGGER.config(String.format("%s.search limit=%d%n", CLASS_NAME, limit));
+		LOGGER.config(String.format("%s.search UCT coefficient=%f%n", CLASS_NAME, uctC));
 		setRoot(root);
 		elapsedTime();
 		
 		try {
 			for (int i=1; i <= limit; i++) {		// TODO: Change limit to elapsed time
 				final int iteration = i;
-				LOGGER.fine(() -> String.format(">>> %s.search start iteration %d%n",
+				LOGGER.fine(() -> String.format(">>> %s.search begin iteration %d%n",
 						CLASS_NAME, iteration));
 				visited = new ArrayList<MCTSPosition>();
 				final int result = -mcts((MCTSPosition) root, 0, "");
-				LOGGER.fine(() -> String.format("<<< %s.search iteration %d, result=%d, principal variation:%n%s",
+				LOGGER.fine(() -> String.format("<<< %s.search end iteration %d, result=%d, principal variation:%n%s",
 						CLASS_NAME, iteration, result, getPrincipalVariation().toString()));				
 			}
 		} catch(MCTSSearchException e) {
@@ -111,11 +134,11 @@ public abstract class MCTS extends TreeSearch {
 				return child;
 			}
 
-			if (child.isDraw()) {
-				LOGGER.finest(() -> String.format("%s  move %s to ply %d (draw)%n",
-						indent, child.getMove().toString(), child.getPly() ));
-				continue;
-			}
+//			if (child.isDraw()) {
+//				LOGGER.finest(() -> String.format("%s  move %s to ply %d (draw)%n",
+//						indent, child.getMove().toString(), child.getPly() ));
+//				continue;
+//			}
 
 			double uctValue = uct(parent, child);
 			LOGGER.finest(() -> String.format("%s  move %s to ply %d UCT=%+f%n",
@@ -125,7 +148,7 @@ public abstract class MCTS extends TreeSearch {
 				bestValue = uctValue;
 			}
 		}
-//		assert selected != null : "No move selected";
+		assert selected != null : "No move selected";
 		
 		final MCTSPosition bp = selected;
 		final double bv = bestValue;
@@ -151,12 +174,11 @@ public abstract class MCTS extends TreeSearch {
 	 * @param child position
 	 * @return Upper Confidence Bounds for Trees value
 	 */
-	private static final double C = Math.sqrt(2);	// Upper confidence bound for Trees (UCT) coefficient
 	private static final double EPSILON = 1.0/(10.0*SCORE_INFINITY);
 
 	protected double uct(MCTSPosition parent, MCTSPosition child) {
 		return child.getScore() / (child.visits + EPSILON) +
-		C * Math.sqrt(Math.log(parent.visits+1) / (child.visits + EPSILON)) +
+		uctC * Math.sqrt(Math.log(parent.visits+1) / (child.visits + EPSILON)) +
 		randGen.nextDouble() * EPSILON;		
 	}
 	
@@ -184,13 +206,13 @@ public abstract class MCTS extends TreeSearch {
 		while (parent.children != null) {
 			final MCTSPosition logParent = parent;
 			LOGGER.finer(() -> String.format(
-					"  Finding best move at ply %d...%n", logParent.getPly()));
+					"  Finding best move from ply %d...%n", logParent.getPly()));
 
 			MCTSPosition bestChild = null;
 			double bestValue = Double.NEGATIVE_INFINITY;
 
 			for (MCTSPosition child : parent.children) {
-				assert child.move != null : "Null move at ply %d";
+				assert child.move != null : String.format("Null move at ply %d", parent.getPly());
 				LOGGER.finer(() -> String.format(
 						"    %s total/visits: %+d/%d",
 						child.getMove().toString(), child.getScore(), child.visits));
@@ -215,7 +237,7 @@ public abstract class MCTS extends TreeSearch {
 			final MCTSPosition logChild = bestChild;
 			final double logValue = bestValue;
 			LOGGER.finer(() -> String.format(
-					"  ...Best move at ply %d is %s (%+f)%n",
+					"  ...Best move from ply %d is %s (%+f)%n",
 					logParent.getPly(), logChild.getMove().toString(), logValue));
 
 //			if (pvar.size() == 0) pvar.setScore(Math.abs(bestChild.getScore()) != SCORE_INFINITY ?
@@ -226,7 +248,7 @@ public abstract class MCTS extends TreeSearch {
 		}
 
 		LOGGER.finer(() -> String.format(
-				"Exiting %s.getPrincipalVariation first move %s at ply %d with score %+d%n",
+				"Exiting %s.getPrincipalVariation first move %s from ply %d with score %+d%n",
 				CLASS_NAME, pvar.getMove().toString(), pvar.getStart().getPly(), pvar.getScore() ));
 
 		return pvar;
