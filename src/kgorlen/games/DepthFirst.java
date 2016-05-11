@@ -89,7 +89,7 @@ public class DepthFirst extends TreeSearch {
 		elapsedTime();
 		search(root, depth, "");
 		elapsedTime();
-		logStatistics(CLASS_NAME);
+		logStatistics();
 		Variation pvar = getPrincipalVariation();
 		Variation.logPrincipalVariation(pvar, CLASS_NAME);
 		return pvar;

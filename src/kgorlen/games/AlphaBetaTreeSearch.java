@@ -70,12 +70,11 @@ public abstract class AlphaBetaTreeSearch extends TreeSearch {
 	
 	/**
 	 * Log search statistics
-	 * 
-	 * @param className Name of TreeSearch subclass
 	 */
 	@Override
-	public void logStatistics(String className) {
-		super.logStatistics(className);
+	public void logStatistics() {
+		String className = getClass().getSimpleName();
+		super.logStatistics();
 		LOGGER.info(() -> String.format(
 				"  %d alpha cutoffs, %d beta cutoffs%n",
 				getAlphaCutoffs(), getBetaCutoffs() ));

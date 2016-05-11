@@ -118,7 +118,7 @@ public class MiniMax extends TreeSearch {
 		elapsedTime();
 		search((GamePosition) root, maxDepth, root.scoreSign() > 0, "");
 		elapsedTime();
-		logStatistics(CLASS_NAME);
+		logStatistics();
 		Variation pvar = getPrincipalVariation();
 		Variation.logPrincipalVariation(pvar, CLASS_NAME);
 		return pvar;

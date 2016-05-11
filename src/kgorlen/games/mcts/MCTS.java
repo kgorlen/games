@@ -14,7 +14,11 @@ public abstract class MCTS extends TreeSearch {
 	private static final String CLASS_NAME = MCTS.class.getName();
 
 	protected double uctC;	// Upper Confidence Bounds for Trees (UCT) coefficient
-	static Random randGen;
+	static Random randGen;	// Random number generator for simulation
+	int depth;				// Current search depth
+	int maxDepth;			// Maximum search depth
+	String indent;			// Indent string for log output
+	
 	public static ArrayList<MCTSPosition> visited;	// TODO: remove after tested
 
 	/**
@@ -69,35 +73,43 @@ public abstract class MCTS extends TreeSearch {
 	public Variation search(Position root, int limit) {
 		assert !((MCTSPosition) root).isWin() && !((MCTSPosition)root).isDraw() :
 			"root is terminal position";
-		LOGGER.config(String.format("%s.search limit=%d%n", CLASS_NAME, limit));
-		LOGGER.config(String.format("%s.search UCT coefficient=%f%n", CLASS_NAME, uctC));
+
+		String className = getClass().getSimpleName();
+		LOGGER.config(String.format("%s.search limit=%d%n", className, limit));
+		LOGGER.config(String.format("%s.search UCT coefficient=%f%n", className, uctC));
+
 		setRoot(root);
+		maxDepth = 0;
 		elapsedTime();
 		
 		try {
 			for (int i=1; i <= limit; i++) {		// TODO: Change limit to elapsed time
 				final int iteration = i;
 				LOGGER.fine(() -> String.format(">>> %s.search begin iteration %d%n",
-						CLASS_NAME, iteration));
+						className, iteration));
+				depth = 0;
+				indent = "";
 				visited = new ArrayList<MCTSPosition>();
-				final int result = -mcts((MCTSPosition) root, 0, "");
+				final int result = -mcts((MCTSPosition) root);
 				LOGGER.fine(() -> String.format("<<< %s.search end iteration %d, result=%d, principal variation:%n%s",
-						CLASS_NAME, iteration, result, getPrincipalVariation().toString()));				
+						className, iteration, result, getPrincipalVariation().toString()));
 			}
 		} catch(MCTSSearchException e) {
 			LOGGER.fine(() -> String.format("%s.search terminated: %s%n",
-					CLASS_NAME, e.toString() ));
+					className, e.toString() ));
 		}
 	
 		elapsedTime();
-		logStatistics(CLASS_NAME);
+		logStatistics();
+		LOGGER.info(() -> String.format("  Max depth=%d%n", depth));		
 		Variation pvar = getPrincipalVariation();
-		Variation.logPrincipalVariation(pvar, CLASS_NAME);
-		LOGGER.info(String.format("MCTSSolver's move: %s%n", pvar.getMove().toString()));
+		Variation.logPrincipalVariation(pvar, className);
+		LOGGER.info(String.format("%s's move: %s (score %+d)%n",
+				className, pvar.getMove().toString(), pvar.getScore() ));
 		return pvar;
 	}
 
-	abstract int mcts(MCTSPosition root, int i, String string) throws MCTSSearchException;
+	abstract int mcts(MCTSPosition root) throws MCTSSearchException;
 
 	/**
 	 * Select child node to expand

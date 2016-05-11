@@ -159,11 +159,10 @@ public abstract class TreeSearch {
 	}
 		
 	/**
-	 * Log search statistics
-	 * 
-	 * @param className Name of TreeSearch subclass
+	 * Log search statistics	 * 
 	 */
-	public void logStatistics(String className) {
+	public void logStatistics() {
+		String className = getClass().getSimpleName();
 		LOGGER.info(() -> String.format(
 				"%s.search statistics:%n", className));
 		LOGGER.info(() -> String.format(

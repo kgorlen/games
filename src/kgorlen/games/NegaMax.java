@@ -100,7 +100,7 @@ public class NegaMax extends TreeSearch {
 		elapsedTime();
 		search((GamePosition) root, maxDepth, "");
 		elapsedTime();
-		logStatistics(CLASS_NAME);
+		logStatistics();
 		Variation pvar = getPrincipalVariation();
 		Variation.logPrincipalVariation(pvar, CLASS_NAME);
 		return pvar;

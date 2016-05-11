@@ -25,14 +25,14 @@ import kgorlen.games.mcts.MCTSSolver;
  * 		4
  * 		5
  * 		6
- * 		 A B C D E F G
+ * 		 a b c d e f g
  * 
  * long[] board bit-to-board square mapping:
  * 
  * 	- one column per byte, row 6 = 0x1 through row 1 = 0x20
  *  - 0x40 and 0x80 bits of each byte are 0 "guard bits" to
  *    stop carries/shifts from changing adjacent bytes
- *  - A column in 7th byte through G column in lowest-order byte.
+ *  - "a" column in 7th byte through "g" column in lowest-order byte.
  * 
  * This layout enables efficient checking for wins (see isWin())
  * and move generation (see Connect4MoveGenerator.getNextMove()).

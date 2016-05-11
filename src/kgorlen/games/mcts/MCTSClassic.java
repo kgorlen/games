@@ -57,7 +57,7 @@ public class MCTSClassic extends MCTS {
 	}
 
 	@Override
-	public int mcts(MCTSPosition root, int depth, String indent) throws MCTSSearchException {
+	public int mcts(MCTSPosition root) throws MCTSSearchException {
 		LOGGER.finer(() -> String.format(
 				"{Entering %s.mcts at ply %d with score=%+d, visits=%d:%n%s",
 				CLASS_NAME, root.getPly(), root.getScore(), root.visits, root.toString() ));
@@ -90,7 +90,7 @@ public class MCTSClassic extends MCTS {
 
         	parent = child;
         	visited.add(parent);
-        	depth++;
+			if (++depth > maxDepth) maxDepth = depth;
         	indent += "  ";
         }
 

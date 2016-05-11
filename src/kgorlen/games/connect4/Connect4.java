@@ -96,10 +96,11 @@ public class Connect4 {
 	 */
 	public static void main(String []args){
 		LOGGER.setLevel(Level.CONFIG);
-	
+		long DEBUG_SEED = 424242424242424247L;  // Fixed seed for debugging  TODO: use random seed
+		
 		while (true) {
-			TreeSearch mcts = new MCTSSolver(4.0, new Random(424242424242424247L));  // Fixed seed for debugging);
-//			TreeSearch mcts = new MCTSClassic(new Random(424242424242424247L));  // Fixed seed for debugging);
+//			TreeSearch mcts = new MCTSClassic(new Random(DEBUG_SEED));
+			TreeSearch mcts = new MCTSSolver(new Random(DEBUG_SEED));
 			Connect4Position root = new Connect4Position();	// Initialize game
 
 			System.out.print("Enter 'x', 'o', 'v', or 'q':");
@@ -112,10 +113,9 @@ public class Connect4 {
 				case "O":
 				case "o": {		// Machine plays X
 					while (!isGameOver(root)) {
-						mcts.search(root, SEARCH_LIMIT);
-						Variation pv = mcts.getPrincipalVariation();
+						Variation pv = mcts.search(root, SEARCH_LIMIT);
 						Move move = pv.getMove();
-						System.out.printf("%d. Machine's move %s (score=%d):%n",
+						System.out.printf("%d. Machine's move %s (score %+d):%n",
 								root.getPly()+1,
 								move.toString(),
 								pv.getScore());

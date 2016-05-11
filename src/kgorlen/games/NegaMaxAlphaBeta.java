@@ -147,7 +147,7 @@ public class NegaMaxAlphaBeta extends AlphaBetaTreeSearch {
 		elapsedTime();
 		search((GamePosition) root, maxDepth, -TreeSearch.SCORE_INFINITY, +TreeSearch.SCORE_INFINITY, "");
 		elapsedTime();
-		logStatistics(CLASS_NAME);
+		logStatistics();
 		Variation pvar = getPrincipalVariation();
 		Variation.logPrincipalVariation(pvar, CLASS_NAME);
 		return pvar;
