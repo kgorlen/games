@@ -9,9 +9,7 @@ import kgorlen.games.MoveGenerator;
 import kgorlen.games.TTEntry;
 import kgorlen.games.Variation;
 import kgorlen.games.mcts.MCTS;
-import kgorlen.games.mcts.MCTSClassic;
 import kgorlen.games.mcts.MCTSPosition;
-import kgorlen.games.mcts.MCTSSolver;
 
 /**
  * Represents a Connect Four GamePosition using a 2-element array of

@@ -103,7 +103,7 @@ public class TicTacToe {
 		while (true) {
 			TreeSearch miniMax = new MiniMax();
 			TreeSearch negaMax = new NegaMax();
-			TreeSearch negaMaxPruned = new NegaMaxAlphaBeta();;
+			TreeSearch negaMaxPruned = new NegaMaxAlphaBeta();
 			TicTacToePosition root = new TicTacToePosition();	// Initialize game
 
 			System.out.print("Enter 'x', 'o', 'd', or 'q':");

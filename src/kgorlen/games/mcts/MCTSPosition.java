@@ -12,6 +12,7 @@ import kgorlen.games.GamePosition;
 import kgorlen.games.Log;
 import kgorlen.games.Move;
 import kgorlen.games.MoveGenerator;
+import kgorlen.games.Position;
 import kgorlen.games.ScoreType;
 import kgorlen.games.TTEntry;
 import kgorlen.games.TreeSearch;
@@ -100,6 +101,18 @@ public abstract class MCTSPosition implements GamePosition {
 		children.add(child);
 	}
 
+	/**
+	 * @param move Move from this position
+	 * @return Child Position for specified Move
+	 */
+// TODO: @Override
+	public Position getChild(Move move) {
+		for (MCTSPosition child : children) {
+			if (move.equals(child.move)) return child;
+		}
+		throw new RuntimeException(String.format("Move %s not found", move.toString()));
+	} 
+	
 	public void expand(String indent) {
 		MoveGenerator gen = moveGenerator();
 		LOGGER.finer(() -> String.format("%sExpanding at ply %d...%n",
@@ -141,14 +154,7 @@ public abstract class MCTSPosition implements GamePosition {
 				MCTSPosition child = (MCTSPosition) parent.copy();
 				child.makeMove(move);
 
-				final MCTSPosition p = parent;
-//				LOGGER.finest(() -> String.format(
-//						"Checking move %s for win at ply %d on 0x%h (parent 0x%h):%n%s",
-//						move.toString(), child.getPly(), System.identityHashCode(child), System.identityHashCode(p),
-//						child.toString() ));
-
 				if (child.isWin()) {
-//					final int winScore = this.scoreSign() * child.scoreWin();
 					final int winScore = child.scoreWin();
 					LOGGER.finer(() -> String.format(
 							"Playout move %s to ply %d is win by %s, score %+d:%n%s",
@@ -160,7 +166,6 @@ public abstract class MCTSPosition implements GamePosition {
 				positions.add(child);
 			}
 
-			final MCTSPosition p = parent;
 			MCTSPosition child = positions.get(MCTS.randGen.nextInt(positions.size()));
 
 			LOGGER.finest(() -> String.format(

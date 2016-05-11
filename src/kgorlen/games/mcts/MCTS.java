@@ -5,6 +5,7 @@ import java.util.Random;
 import java.util.logging.Logger;
 
 import kgorlen.games.Log;
+import kgorlen.games.Move;
 import kgorlen.games.Position;
 import kgorlen.games.TreeSearch;
 import kgorlen.games.Variation;
@@ -101,7 +102,7 @@ public abstract class MCTS extends TreeSearch {
 	
 		elapsedTime();
 		logStatistics();
-		LOGGER.info(() -> String.format("  Max depth=%d%n", depth));		
+		LOGGER.info(() -> String.format("  Max depth=%d%n", maxDepth));		
 		Variation pvar = getPrincipalVariation();
 		Variation.logPrincipalVariation(pvar, className);
 		LOGGER.info(String.format("%s's move: %s (score %+d)%n",

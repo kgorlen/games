@@ -43,7 +43,7 @@ public class Connect4 {
 	 * 
 	 * @param p	current board position
 	 */
-	static void opponentsMove(Connect4Position p) {
+	static Connect4Position opponentsMove(Connect4Position p) {
 		while (true) {
 			System.out.printf("%d. Enter 'v', 'q', or move a-g:", p.getPly()+1);
 			String cmd = Input.next();
@@ -59,9 +59,9 @@ public class Connect4 {
 					Connect4Move move = p.newMove(Character.toLowerCase(cmd.charAt(0)));
 					if (p.isValidMove(move)) {
 						LOGGER.info(String.format("Opponent's move: %s%n", move.toString()));
-						p.makeMove(move);
+						p = (Connect4Position) p.getChild(move);
 						p.print();
-						return;
+						return p;
 					} else {
 						System.out.printf("Move: %s (0x%x), valid: 0x%x%n", 
 								move.toString(), move.toLong(), p.moves());
@@ -98,18 +98,19 @@ public class Connect4 {
 		LOGGER.setLevel(Level.CONFIG);
 		long DEBUG_SEED = 424242424242424247L;  // Fixed seed for debugging  TODO: use random seed
 		
-		while (true) {
-//			TreeSearch mcts = new MCTSClassic(new Random(DEBUG_SEED));
-			TreeSearch mcts = new MCTSSolver(new Random(DEBUG_SEED));
-			Connect4Position root = new Connect4Position();	// Initialize game
+		TreeSearch mcts = new MCTSClassic(new Random(DEBUG_SEED));
+//		TreeSearch mcts = new MCTSSolver(new Random(DEBUG_SEED));
+		Connect4Position root = new Connect4Position();	// Initialize game
 
+		while (true) {
 			System.out.print("Enter 'x', 'o', 'v', or 'q':");
 			String cmd = Input.next();
 			switch (cmd) {
 				case "X":
 				case "x":		// User plays X
 					root.print();
-					opponentsMove(root);
+					mcts.search(root, SEARCH_LIMIT);
+					root = opponentsMove(root);
 				case "O":
 				case "o": {		// Machine plays X
 					while (!isGameOver(root)) {
@@ -119,10 +120,10 @@ public class Connect4 {
 								root.getPly()+1,
 								move.toString(),
 								pv.getScore());
-						root.makeMove(move);
+						root = (Connect4Position) root.getChild(move);
 						root.print();
 						if (isGameOver(root)) break;
-						opponentsMove(root);
+						root = opponentsMove(root);
 					} ;
 					break;
 				}
