@@ -174,9 +174,7 @@ public class TicTacToePosition implements GamePosition {
 		int m = board[~ply & 1];	// 1 - ply%2 (i.e. check X's if O's turn)
 		if ((m & 0x421) == 0x421) return true;		// 1-5-9 diagonal
 		if ((m & 0x124) == 0x124) return true;		// 3-5-7 diagonal
-		if (((m &= m<<1) != 0)
-				&& ((m &= m<<1) != 0)) return true;	// 3 in a row
-		m = board[~ply & 1];
+		if ((m + 0x111 & 0x888) != 0) return true;	// 3 in a row
 		if ((m & m<<4 & m<<8) != 0) return true;	// 3 in a column
 		
 		return false;
