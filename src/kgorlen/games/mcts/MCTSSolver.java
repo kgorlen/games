@@ -127,9 +127,13 @@ public class MCTSSolver extends MCTS {
 			return 0;
 		}
 		
+// ***** EXPANSION *****
 		if (parent.children == null) parent.expand(indent);	// <<< Expand >>>
+// *****
 
+// ***** SELECTION *****
 		final MCTSPosition bestChild = select(parent);		// <<< Select >>>
+// *****
 
 		if (bestChild.isWin()) {	// At least one child is win for playerToMove
 			bestChild.visits++;
@@ -179,7 +183,8 @@ public class MCTSSolver extends MCTS {
 				&& bestChild.getScore() != -SCORE_INFINITY) {
 			// Selected child is not proven win or draw
 			if (bestChild.visits == 0) {
-				result = bestChild.scoreSign() * bestChild.evaluate();	// <<< Simulate playout >>>
+// ***** SIMULATION *****
+				result = bestChild.scoreSign() * bestChild.evaluate();
 				bestChild.setScore(result);
 				bestChild.visits = 1;
 				parent.updateScore(-result);		// parent.computeAverage(score);
@@ -189,8 +194,11 @@ public class MCTSSolver extends MCTS {
 						indent, CLASS_NAME, bestChild.getMove().toString(), bestChild.getPly(),
 						parent.getScore(), parent.visits, bestChild.getScore() ));
 				return result;
+// *****
+
 
 			} else {
+// ***** RECURSION *****
 				LOGGER.finer(() -> String.format(
 						"%sSearching move %s to ply %d with score %+d...%n",
 						indent, bestChild.getMove().toString(), bestChild.getPly(), bestChild.getScore() ));
@@ -202,6 +210,7 @@ public class MCTSSolver extends MCTS {
 				LOGGER.finer(() -> String.format(
 						"%s...Search of move %s to ply %d result=%+d%n",
 						indent, bestChild.getMove().toString(), bestChild.getPly(), searchResult ));				
+// *****
 			}
 		} else {
 			// Selected child is proven win or (unproven) loss
@@ -211,6 +220,8 @@ public class MCTSSolver extends MCTS {
 			result = bestChild.getScore();	// I.e. +-INFINITY
 		}
 		
+// Here after (1) selection of non-terminal child scored +-INFINITY or (2) recursion
+		assert bestChild.visits != 0 : "Child scored but not visited";
 		if (result == SCORE_INFINITY) {  // playerToMove wins: mcts() returned -INFINITY
 			parent.setScore(-SCORE_INFINITY);
 			LOGGER.finer(() -> String.format(
@@ -251,6 +262,7 @@ public class MCTSSolver extends MCTS {
 			return -SCORE_INFINITY;	// All children are losses for playerToMove
 		}
 
+// Here after recursion returning -1, 0, or +1
 		assert result > -SCORE_INFINITY && result < SCORE_INFINITY :
 			"Score out of range: " + result;
 		parent.updateScore(-result);	// parent.computeAverage(score);

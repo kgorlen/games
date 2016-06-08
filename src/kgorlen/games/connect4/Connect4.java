@@ -98,8 +98,8 @@ public class Connect4 {
 		LOGGER.setLevel(Level.CONFIG);
 		long DEBUG_SEED = 424242424242424247L;  // Fixed seed for debugging  TODO: use random seed
 		
-		TreeSearch mcts = new MCTSClassic(new Random(DEBUG_SEED));
-//		TreeSearch mcts = new MCTSSolver(new Random(DEBUG_SEED));
+//		TreeSearch mcts = new MCTSClassic(new Random(DEBUG_SEED));
+		TreeSearch mcts = new MCTSSolver(new Random(DEBUG_SEED));
 		Connect4Position root = new Connect4Position();	// Initialize game
 
 		while (true) {

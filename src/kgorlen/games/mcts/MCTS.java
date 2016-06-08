@@ -78,6 +78,8 @@ public abstract class MCTS extends TreeSearch {
 		String className = getClass().getSimpleName();
 		LOGGER.config(String.format("%s.search limit=%d%n", className, limit));
 		LOGGER.config(String.format("%s.search UCT coefficient=%f%n", className, uctC));
+		LOGGER.info(() -> String.format("%s.search root position:%n%s",
+				className, root.toString() ));
 
 		setRoot(root);
 		maxDepth = 0;
